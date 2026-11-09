@@ -1,0 +1,324 @@
+/* ───────── Room & surface ───────── */
+.desk-room {
+  position: fixed; inset: 0;
+  overflow: hidden;
+  display: grid; place-items: center;
+  background: var(--ink);
+}
+.desk-surface {
+  position: absolute; inset: -4%;
+  background-color: var(--wood-dark);
+  background-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='1400' height='700'><filter id='n' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='0.0028 0.075' numOctaves='5' seed='11' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.10  0 0 0 0 0.055  0 0 0 0 0.03  0 0 0 1.25 -0.38'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='f' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' seed='2'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .22 0'/></filter><rect width='100%' height='100%' filter='url(%23f)'/></svg>"),
+    linear-gradient(180deg, #3c2719 0%, #31201a 45%, #251810 100%);
+  background-size: 1400px 700px, 300px 300px, 100% 100%;
+  /* plank seams run left→right */
+  box-shadow: inset 0 0 0 1px #0000;
+}
+.desk-surface::after {
+  content: ''; position: absolute; inset: 0;
+  background: repeating-linear-gradient(178.6deg, transparent 0 21.5%, rgba(8,4,2,.55) 21.5% 21.7%, rgba(150,100,60,.08) 21.7% 21.85%);
+}
+/* candle-lit vignette: warm centre, dark rim */
+.desk-light {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 55% at 62% 48%, rgba(255,196,120,.16), transparent 70%),
+    radial-gradient(ellipse 85% 80% at 55% 50%, transparent 40%, rgba(10,6,4,.78) 100%);
+  z-index: 1;
+}
+.layout-tall .desk-light {
+  background:
+    radial-gradient(ellipse 80% 45% at 55% 45%, rgba(255,196,120,.16), transparent 70%),
+    radial-gradient(ellipse 110% 75% at 50% 50%, transparent 40%, rgba(10,6,4,.8) 100%);
+}
+
+/* ───────── Stage (fixed aspect, scales with viewport) ───────── */
+.stage {
+  position: relative; z-index: 2;
+  aspect-ratio: var(--ar);
+  width: min(100vw, calc(100dvh * var(--ar)));
+  max-width: 100%;
+  container-type: inline-size;
+}
+.stage-inner {
+  position: absolute; inset: 0;
+  transform-origin: var(--ox) var(--oy);
+  animation: desk-arrive .9s var(--ease-out) both;
+}
+@keyframes desk-arrive {
+  from { opacity: 0; transform: scale(1.03); filter: brightness(.4); }
+  to   { opacity: 1; transform: none; filter: none; }
+}
+
+/* ───────── Title ───────── */
+.desk-title { position: absolute; z-index: 20; pointer-events: none; }
+.desk-title h1 { margin: 0; display: grid; gap: .35cqw; font-weight: 400; }
+.desk-title.align-right h1 { justify-items: end; text-align: right; }
+.desk-title.align-center h1 { justify-items: center; text-align: center; }
+.title-main {
+  font-family: var(--f-caps);
+  font-weight: 600;
+  font-size: 4.2cqw; line-height: .95;
+  letter-spacing: .16em; margin-right: -.16em;
+  color: #e3cfa6;
+  text-shadow: 0 1px 0 #000, 0 .3cqw 1.4cqw rgba(0,0,0,.8);
+}
+.title-rule {
+  display: block; width: 62%; height: .9cqw;
+  background:
+    radial-gradient(circle, var(--gold) 0 .22cqw, transparent .26cqw) center / .9cqw .9cqw no-repeat,
+    linear-gradient(90deg, transparent, var(--gold) 30%, var(--gold) 46%, transparent 46% 54%, var(--gold) 54% 70%, transparent) center / 100% 1px no-repeat;
+  opacity: .75;
+}
+.title-sub {
+  font-family: var(--f-display); font-style: italic; font-weight: 500;
+  font-size: 1.55cqw; letter-spacing: .32em; margin-right: -.32em;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+.layout-tall .title-main { font-size: 9.6cqw; }
+.layout-tall .title-sub { font-size: 3.4cqw; }
+.layout-tall .title-rule { height: 2cqw; width: 50%; }
+
+.desk-hint {
+  position: absolute; z-index: 3; left: 0; right: 0;
+  bottom: max(1.2vh, env(safe-area-inset-bottom, 0px));
+  margin: 0; text-align: center;
+  font-size: 12px; letter-spacing: .2em; color: var(--text-dim); opacity: .7;
+  pointer-events: none;
+}
+
+/* ───────── Objects ───────── */
+.deco, .desk-obj {
+  position: absolute;
+  left: var(--x); top: var(--y); width: var(--w);
+  transform: rotate(var(--r));
+}
+.deco { pointer-events: none; filter: saturate(.75) brightness(.78); }
+.deco svg { display: block; width: 100%; height: auto; overflow: visible; }
+.deco-candle { filter: none; }
+.deco-candle .flame { transform-origin: 100px 88px; animation: flicker 3.8s ease-in-out infinite; }
+@keyframes flicker {
+  0%, 100% { transform: scale(1, 1) skewX(0); opacity: 1; }
+  30% { transform: scale(.97, 1.04) skewX(1.5deg); opacity: .95; }
+  55% { transform: scale(1.02, .97) skewX(-1deg); opacity: 1; }
+  80% { transform: scale(.98, 1.02) skewX(.6deg); opacity: .93; }
+}
+
+.desk-obj {
+  padding: 0; margin: 0; border: 0; background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.desk-obj:focus-visible { outline: none; }
+
+.obj-lift {
+  position: relative; display: block;
+  transition: transform var(--t-hover) var(--ease-out), filter var(--t-hover) var(--ease-out);
+  will-change: transform;
+}
+.obj-image { display: block; width: 100%; height: auto; }
+
+/* contact shadow: tight & dark at rest, wider & softer when lifted */
+.obj-shadow {
+  position: absolute; inset: 6% 3% 0 5%;
+  border-radius: 6%;
+  background: rgba(5, 2, 1, .78);
+  filter: blur(.5cqw);
+  transform: translate(.35cqw, .55cqw);
+  transition: transform var(--t-hover) var(--ease-out), opacity var(--t-hover) var(--ease-out), filter var(--t-hover) var(--ease-out);
+}
+.obj-profiles .obj-shadow { inset: 10% 5% 2% 5%; border-radius: 50%; }
+.obj-rules .obj-shadow { inset: 10% 2% 4% 4%; border-radius: 20%; }
+
+/* hover rim + small brightness rise (SVG paths with class .rim) */
+.rim { opacity: 0; transition: opacity var(--t-hover) var(--ease-out); filter: drop-shadow(0 0 3px rgba(216,188,131,.6)); }
+.gilt { transition: stroke var(--t-hover) var(--ease-out); }
+
+/* Lifted state: hover (fine pointers), keyboard focus, touch press */
+@media (hover: hover) {
+  .desk-obj:hover .obj-lift { transform: translateY(-7px); filter: brightness(1.1) saturate(1.05); }
+  .desk-obj:hover .obj-shadow { transform: translate(.9cqw, 1.5cqw) scale(1.03); filter: blur(1.4cqw); opacity: .7; }
+  .desk-obj:hover .rim { opacity: .85; }
+  .desk-obj:hover .gilt { stroke: var(--gold-hi); }
+  .desk-obj:hover .obj-label { color: #f0dcb0; }
+}
+.desk-obj:focus-visible .obj-lift,
+.desk-obj:active .obj-lift { transform: translateY(-7px); filter: brightness(1.1) saturate(1.05); }
+.desk-obj:focus-visible .obj-shadow,
+.desk-obj:active .obj-shadow { transform: translate(.9cqw, 1.5cqw) scale(1.03); filter: blur(1.4cqw); opacity: .7; }
+.desk-obj:focus-visible .rim,
+.desk-obj:active .rim { opacity: .85; }
+.desk-obj:focus-visible .obj-label::after { opacity: 1; }
+
+/* ───────── Labels (HTML on the object) ───────── */
+.obj-label {
+  position: absolute; display: grid; justify-items: center; gap: .15em;
+  pointer-events: none;
+  transition: color var(--t-hover) var(--ease-out);
+  line-height: 1;
+}
+.obj-label::after { /* focus underline */
+  content: ''; width: 70%; height: 1px; background: var(--gold-hi); opacity: 0;
+  transition: opacity var(--t-hover);
+}
+.label-en { font-family: var(--f-caps); font-weight: 600; letter-spacing: .2em; margin-right: -.2em; text-transform: uppercase; }
+.label-ko { font-family: var(--f-body); letter-spacing: .3em; margin-right: -.3em; opacity: .75; }
+
+.obj-art { position: relative; display: block; }
+.obj-art svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+/* Book */
+.book-art { aspect-ratio: 560 / 440; perspective: 1600px; }
+.book-base, .book-cover { position: absolute; inset: 0; }
+.book-cover { transform-origin: 9% 50%; transform-style: preserve-3d; backface-visibility: hidden; transition: transform .25s var(--ease-out); }
+.book-label {
+  left: 18%; right: 3%; top: 64%;
+  transform: rotate(-2.6deg);
+  color: #d8bf8c;
+  text-shadow: 0 1px 0 rgba(0,0,0,.9), 0 0 .6em rgba(0,0,0,.6);
+}
+.book-label .label-en { font-size: 3.1cqw; }
+.book-label .label-ko { font-size: 1cqw; }
+.layout-tall .book-label .label-en { font-size: 6.4cqw; }
+.layout-tall .book-label .label-ko { font-size: 2.3cqw; }
+@media (hover: hover) {
+  .desk-obj.obj-episodes:hover .book-cover { transform: rotateY(-4deg); }
+}
+
+/* Locket */
+.locket-art { aspect-ratio: 1; perspective: 900px; }
+.locket-chain { position: absolute !important; width: 200% !important; left: -100%; top: -110%; }
+.locket-case, .locket-lid { position: absolute; inset: 0; }
+.locket-lid { transform-origin: 50% 8%; transform-style: preserve-3d; backface-visibility: hidden; }
+/* label engraved into the enamel, below the crest */
+.engraved-label {
+  left: 22%; right: 22%; top: 60%;
+  gap: .25em;
+  color: #d9bd85;
+  text-shadow: 0 -1px 0 rgba(0,0,0,.8), 0 1px 0 rgba(255,225,170,.18);
+}
+.engraved-label .label-en { font-size: 1.4cqw; letter-spacing: .16em; margin-right: -.16em; }
+.engraved-label .label-ko { font-size: .75cqw; }
+.layout-tall .engraved-label .label-en { font-size: 3cqw; }
+.layout-tall .engraved-label .label-ko { font-size: 1.7cqw; }
+
+/* Album */
+.album-art { aspect-ratio: 520 / 380; perspective: 1400px; }
+.album-base, .album-cover { position: absolute; inset: 0; }
+.album-cover { transform-origin: 6% 50%; transform-style: preserve-3d; backface-visibility: hidden; }
+.plate-label {
+  left: 38.5%; width: 38.5%; top: 39.5%; height: 19.5%;
+  align-content: center;
+  color: #2b1d0e;
+  text-shadow: 0 1px 0 rgba(255,235,190,.4);
+  transform: rotate(-.8deg);
+}
+.plate-label .label-en { font-size: 1.9cqw; }
+.plate-label .label-ko { font-size: .8cqw; }
+.layout-tall .plate-label .label-en { font-size: 3.3cqw; }
+.layout-tall .plate-label .label-ko { font-size: 1.6cqw; }
+
+/* Scroll */
+.scroll-art { aspect-ratio: 520 / 300; }
+.scroll-roll { position: absolute !important; left: 0; top: 0; width: 100% !important; z-index: 2; }
+.scroll-sheet { position: absolute; left: 4%; right: 6%; top: 22%; height: 60%; transform-origin: 50% 0; }
+.scroll-sheet svg { width: 100%; height: 100%; }
+.sheet-label {
+  left: 8%; right: 10%; top: 54%;
+  color: var(--parchment-ink);
+  transform: rotate(-.5deg);
+}
+.sheet-label .label-en { font-size: 2.1cqw; }
+.sheet-label .label-ko { font-size: .85cqw; }
+.layout-tall .sheet-label .label-en { font-size: 4.6cqw; }
+.layout-tall .sheet-label .label-ko { font-size: 2cqw; }
+
+.image-label { left: 0; right: 0; bottom: 8%; color: var(--gold-hi); font-size: 1.6cqw; text-shadow: 0 1px 2px #000; }
+
+/* ───────── Leaving: object-specific opening + camera move ───────── */
+.leaving .desk-obj { pointer-events: none; }
+.leaving .stage-inner { animation: camera-in 1s cubic-bezier(.55,.05,.4,1) forwards; }
+@keyframes camera-in {
+  0%, 35% { transform: none; }
+  100% { transform: scale(1.7); }
+}
+.desk-obj.is-dimmed { transition: opacity .5s ease; opacity: .55; }
+.leaving .desk-hint, .leaving .desk-title { transition: opacity .3s; opacity: 0; }
+.desk-obj.is-opening .obj-lift { transform: translateY(-8px); }
+
+/* Episodes: cover swings open on its spine */
+.is-opening .book-cover { animation: cover-open .7s cubic-bezier(.5,.05,.3,1) forwards; }
+@keyframes cover-open { to { transform: rotateY(-172deg); } }
+
+/* Profiles: lid hinges up, revealing the portrait */
+.is-opening .locket-lid { animation: lid-open .6s cubic-bezier(.5,.05,.3,1) forwards; }
+@keyframes lid-open { to { transform: rotateX(-168deg); } }
+
+/* Gallery: album cover opens, photos slip out (see .veil-photos) */
+.is-opening .album-cover { animation: cover-open .65s cubic-bezier(.5,.05,.3,1) forwards; }
+
+/* Rules: sheet unrolls toward the viewer */
+.is-opening .scroll-sheet { animation: unroll .7s cubic-bezier(.4,.1,.3,1) forwards; }
+.is-opening .sheet-label { transition: opacity .2s; opacity: 0; }
+@keyframes unroll { to { transform: scaleY(3.2); } }
+
+/* Veils: each hands over to its page with a different motion */
+.veil { position: fixed; inset: 0; z-index: 50; pointer-events: none; }
+.veil-episodes {
+  background: radial-gradient(ellipse at var(--vx) var(--vy), #d7bc91 0%, #8a6d48 60%, #110e0c 100%);
+  opacity: 0; animation: fade-to 1s ease-in forwards;
+}
+@keyframes fade-to { 0%, 45% { opacity: 0; } 100% { opacity: 1; } }
+
+.veil-profiles {
+  background: radial-gradient(circle at 45% 40%, #3a2618, #120c08 70%);
+  clip-path: circle(0% at var(--vx) var(--vy));
+  animation: iris 1s cubic-bezier(.6,.05,.3,1) forwards;
+}
+@keyframes iris { 0%, 40% { clip-path: circle(0% at var(--vx) var(--vy)); } 100% { clip-path: circle(150% at var(--vx) var(--vy)); } }
+
+.veil-gallery {
+  background: #1a130e;
+  transform-origin: 0 50%;
+  transform: perspective(1200px) rotateY(90deg);
+  animation: page-turn 1s cubic-bezier(.5,.05,.3,1) forwards;
+}
+@keyframes page-turn { 0%, 40% { transform: perspective(1200px) rotateY(90deg); } 100% { transform: perspective(1200px) rotateY(0); } }
+.veil-photos { position: fixed; inset: 0; z-index: 51; pointer-events: none; }
+.veil-photos span {
+  position: absolute; left: 18%; top: 66%;
+  width: 14vmin; aspect-ratio: 5 / 4;
+  background: #d8cbb0; border: 1.2vmin solid #e8dcc2;
+  box-shadow: 0 1vmin 3vmin rgba(0,0,0,.6);
+  animation: photo-fly .9s cubic-bezier(.3,.6,.3,1) calc(.25s + var(--i) * .06s) both;
+}
+@keyframes photo-fly {
+  from { transform: translate(0, 0) rotate(-8deg) scale(.6); opacity: 0; }
+  30% { opacity: 1; }
+  to { transform: translate(calc(var(--i) * 14vw + 2vw), calc(-30vh + var(--i) * 4vh)) rotate(calc(var(--i) * 9deg - 18deg)) scale(1.4); opacity: 0; }
+}
+
+.veil-rules {
+  background: linear-gradient(180deg, #8a6c44, #d7bc91 6%, #d7bc91 94%, #8a6c44);
+  transform-origin: 50% 0;
+  transform: scaleY(0);
+  animation: veil-unroll 1s cubic-bezier(.5,.05,.3,1) forwards;
+}
+@keyframes veil-unroll { 0%, 40% { transform: scaleY(0); } 100% { transform: scaleY(1); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .deco-candle .flame { animation: none; }
+  .obj-lift, .obj-shadow { transition: none; }
+}
+
+/* phone composition: the locket's tag sits beside it, clear of the book */
+.book-cover *, .album-cover *, .locket-lid * { backface-visibility: hidden; }
+@media (hover: hover) {
+  .desk-obj:hover .obj-label.sheet-label { color: #241608; }
+  .desk-obj:hover .obj-label.plate-label { color: #1c1206; }
+}
+.layout-tall .locket-chain { transform-origin: 75% 53.7%; transform: rotate(-38deg); }

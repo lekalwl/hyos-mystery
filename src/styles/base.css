@@ -1,0 +1,89 @@
+/* Layout concept: a single dark study desk; the camera looks down at ~35°,
+   lit by one candle. Sub-pages are the opened object, seen up close. */
+:root {
+  --ink: #110e0c;          /* deepest shadow / page ground */
+  --wood-dark: #2b1d16;
+  --wood-mid: #513624;
+  --gold: #b99860;         /* antique gold, used sparingly */
+  --gold-hi: #d8bc83;      /* highlight / focus / hover rim */
+  --parchment: #d7bc91;
+  --parchment-ink: #3a2a1a;
+  --burgundy: #4a2024;
+  --text: #e8dcc4;
+  --text-dim: #a8977b;
+
+  --f-display: 'Cormorant Garamond', 'Cormorant', Garamond, 'Times New Roman', serif;
+  --f-caps: 'Cormorant SC', 'Cormorant Garamond', Garamond, serif;
+  --f-body: 'Nanum Myeongjo', 'Noto Serif KR', 'Batang', serif;
+
+  --ease-out: cubic-bezier(.22, .8, .3, 1);
+  --t-hover: .3s;
+
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: var(--ink);
+  color: var(--text);
+  font-family: var(--f-body);
+  font-size: 16px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+button { font: inherit; color: inherit; }
+img { max-width: 100%; }
+h1, h2, h3 { text-wrap: balance; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+:focus-visible { outline: 2px solid var(--gold-hi); outline-offset: 3px; }
+
+/* Shared wood texture (data-URI noise, stretched for grain) */
+.wood {
+  background-color: var(--wood-dark);
+  background-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='900' height='600'><filter id='n' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='0.0035 0.09' numOctaves='4' seed='7' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.09  0 0 0 0 0.05  0 0 0 0 0.03  0 0 0 1.1 -0.35'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"),
+    repeating-linear-gradient(180deg, transparent 0 calc(25vh - 2px), rgba(0,0,0,.45) calc(25vh - 2px) 25vh),
+    linear-gradient(180deg, #3b2619, #2b1d16 60%, #22160f);
+  background-size: 900px 600px, 100% 100%, 100% 100%;
+}
+
+.ornament-rule {
+  display: block; height: 10px; width: 100%;
+  background:
+    radial-gradient(circle, var(--gold) 0 2.5px, transparent 3px) center / 10px 10px no-repeat,
+    linear-gradient(90deg, transparent, var(--gold) 20%, var(--gold) 46%, transparent 46%, transparent 54%, var(--gold) 54%, var(--gold) 80%, transparent) center / 100% 1px no-repeat;
+  opacity: .7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+[hidden] { display: none !important; }
+.draft-badge {
+  position: fixed; z-index: 90;
+  left: max(12px, env(safe-area-inset-left, 0px)); bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  padding: 6px 12px; min-height: 32px;
+  background: rgba(74,32,36,.92); color: #f0dcb0; border: 1px solid #8a5a3c;
+  font-size: 12px; letter-spacing: .08em; cursor: pointer;
+}
+.editor-loading { display: grid; place-items: center; height: 100%; color: var(--text-dim); }
+.menu-sound {
+  position: fixed; z-index: 90;
+  right: max(12px, env(safe-area-inset-right, 0px)); bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  width: 40px; height: 40px; padding: 9px; border-radius: 50%;
+  background: rgba(17,14,12,.7); border: 1px solid rgba(185,152,96,.45); color: var(--gold-hi); cursor: pointer;
+}
+.menu-sound svg { width: 100%; height: 100%; }
+.menu-sound[aria-pressed="false"] { color: var(--text-dim); }

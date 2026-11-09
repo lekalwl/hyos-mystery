@@ -1,0 +1,15 @@
+{
+  // Cloudflare Workers Builds: on every push to main, Cloudflare installs
+  // dependencies, runs `build.command` (public build, editor excluded) and
+  // deploys dist-public as static assets.
+  "name": "grayhaven",
+  "main": "worker.js",
+  "compatibility_date": "2025-01-01",
+  "workers_dev": true,
+  "build": { "command": "npm run build:public" },
+  "assets": {
+    "directory": "./dist-public",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
+  }
+}
