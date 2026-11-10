@@ -5,7 +5,7 @@ import { useSeen } from '../lib/seen';
 import { outfitOf } from '../content/sprites';
 
 /** Gallery items come straight from the library (images with gallery on). */
-export interface GalleryItem { id: string; category: string; title: string; src: string; width: number; height: number; caption?: string }
+export interface GalleryItem { id: string; category: string; title: string; src: string; width: number; height: number; caption?: string; character?: string; outfit?: string; expression?: string }
 const galleryCategories: { id: string; label: string; labelEn: string; kinds: AssetKind[] }[] = [
   { id: 'illustration', label: '일러스트', labelEn: 'Illustrations', kinds: ['cg'] },
   { id: 'sprite', label: '스탠딩', labelEn: 'Sprites', kinds: ['sprite'] },
@@ -30,10 +30,39 @@ export function GalleryPage({ category }: { category?: string }) {
         id: a.id, category: cat, src: assetUrl(a.id) ?? '',
         title: owner ? `${owner} · ${outfitOf(a)} · ${a.expression ?? a.name}` : a.name,
         width: a.width ?? 1600, height: a.height ?? 900,
+        character: a.character, outfit: a.kind === 'sprite' ? outfitOf(a) : undefined, expression: a.expression,
       };
     })
     .filter((i) => i.src);
   const [open, setOpen] = useState<number | null>(null);
+
+  // standing sprites: browse by character or by outfit
+  const isSprite = cat === 'sprite';
+  const [view, setView] = useState<'char' | 'outfit'>('char');
+  const [pick, setPick] = useState('');
+  const charOrder = new Map(data.characters.map((c, i) => [c.id, i]));
+  const charName = (id?: string) => data.characters.find((c) => c.id === id)?.name ?? '';
+  const outfitList = Array.from(new Set(data.characters.flatMap((c) => c.outfits ?? []).concat(items.map((i) => i.outfit ?? ''))))
+    .filter((o) => o && items.some((i) => i.outfit === o));
+  const charList = data.characters.filter((c) => items.some((i) => i.character === c.id));
+  const options = view === 'char' ? charList.map((c) => ({ key: c.id, label: c.name, color: c.color })) : outfitList.map((o) => ({ key: o, label: o, color: undefined as string | undefined }));
+  const curPick = options.some((o) => o.key === pick) ? pick : '';
+  const groups: { key: string; title: string; color?: string; items: GalleryItem[] }[] = !isSprite
+    ? [{ key: 'all', title: '', items }]
+    : options
+        .filter((o) => !curPick || o.key === curPick)
+        .map((o) => ({
+          key: o.key, title: o.label, color: o.color,
+          items: items
+            .filter((i) => (view === 'char' ? i.character === o.key : i.outfit === o.key))
+            .sort((a, b) => view === 'char'
+              ? (outfitList.indexOf(a.outfit ?? '') - outfitList.indexOf(b.outfit ?? '')) || (a.expression ?? '').localeCompare(b.expression ?? '', 'ko')
+              : ((charOrder.get(a.character ?? '') ?? 0) - (charOrder.get(b.character ?? '') ?? 0)) || (a.expression ?? '').localeCompare(b.expression ?? '', 'ko')),
+        }))
+        .filter((g) => g.items.length);
+  const shownItems = groups.flatMap((g) => g.items);
+  const caption = (it: GalleryItem) => !isSprite ? it.title
+    : view === 'char' ? `${it.outfit} · ${it.expression}` : `${charName(it.character)} · ${it.expression}`;
 
   return (
     <SubPage kind="gallery" eyebrow="Gallery" title="갤러리">
@@ -56,23 +85,49 @@ export function GalleryPage({ category }: { category?: string }) {
 
         {items.length === 0 && <p className="gallery-empty">{locked ? '이야기를 읽으며 본 장면이 여기에 모입니다.' : '아직 등록된 이미지가 없습니다.'}</p>}
         {locked > 0 && <p className="gallery-locked">아직 보지 못한 {locked}장{seen.operator ? ' · 운영자 브라우저라 모두 보입니다' : ''}</p>}
-        <ul className="photo-grid" role="tabpanel">
-          {items.map((it, i) => (
-            <li key={it.id} style={{ '--tilt': `${((i * 37) % 7) - 3}deg` } as React.CSSProperties}>
-              <button type="button" className="photo" onClick={() => setOpen(i)}>
-                <span className="photo-print" style={{ aspectRatio: `${it.width} / ${it.height}` }}>
-                  <img src={it.src} alt="" loading="lazy" decoding="async" />
-                </span>
-                <span className="photo-caption">{it.title}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
+        {isSprite && items.length > 0 && (
+          <div className="sprite-filter">
+            <div className="sprite-view" role="group" aria-label="묶어 보기">
+              <button type="button" aria-pressed={view === 'char'} onClick={() => { setView('char'); setPick(''); setOpen(null); }}>캐릭터별</button>
+              <button type="button" aria-pressed={view === 'outfit'} onClick={() => { setView('outfit'); setPick(''); setOpen(null); }}>의상별</button>
+            </div>
+            <div className="sprite-chips" role="group" aria-label={view === 'char' ? '인물' : '의상'}>
+              <button type="button" aria-pressed={!curPick} onClick={() => { setPick(''); setOpen(null); }}>전체</button>
+              {options.map((o) => (
+                <button key={o.key} type="button" aria-pressed={curPick === o.key} onClick={() => { setPick(o.key); setOpen(null); }}>
+                  {o.color && <i style={{ background: o.color }} aria-hidden="true" />}{o.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        <div role="tabpanel">
+          {groups.map((g) => {
+            const offset = shownItems.indexOf(g.items[0]);
+            return (
+              <section key={g.key} className={isSprite ? 'sprite-group' : undefined}>
+                {isSprite && <h2 className="sprite-group-title">{g.color && <i style={{ background: g.color }} aria-hidden="true" />}{g.title}<small>{g.items.length}장</small></h2>}
+                <ul className={`photo-grid${isSprite ? ' is-sprites' : ''}`}>
+                  {g.items.map((it, j) => (
+                    <li key={it.id} style={{ '--tilt': `${(((offset + j) * 37) % 7) - 3}deg` } as React.CSSProperties}>
+                      <button type="button" className="photo" onClick={() => setOpen(offset + j)}>
+                        <span className="photo-print" style={{ aspectRatio: `${it.width} / ${it.height}` }}>
+                          <img src={it.src} alt="" loading="lazy" decoding="async" />
+                        </span>
+                        <span className="photo-caption">{caption(it)}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            );
+          })}
+        </div>
       </div>
 
-      {open !== null && items[open] && (
+      {open !== null && shownItems[open] && (
         <Lightbox
-          items={items}
+          items={shownItems}
           index={open}
           onIndex={setOpen}
           onClose={() => setOpen(null)}
