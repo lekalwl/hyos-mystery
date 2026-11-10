@@ -8,15 +8,17 @@ import { CharactersTab } from './CharactersTab';
 import { EpisodesTab } from './EpisodesTab';
 import { HelpTab } from './HelpTab';
 import { RulesTab } from './RulesTab';
+import { InvestigationTab } from './InvestigationTab';
 import { exportZip, importFile } from './assets';
 import { saveFile, SAVE_MESSAGES } from '../lib/download';
 import '../styles/editor.css';
 
 const useContentDismiss = () => updateContent((d) => d); // touching the draft makes it the newest
 
-type Tab = 'script' | 'library' | 'chars' | 'episodes' | 'rules' | 'help';
+type Tab = 'script' | 'invest' | 'library' | 'chars' | 'episodes' | 'rules' | 'help';
 const TABS: { id: Tab; label: string }[] = [
   { id: 'script', label: '대본' },
+  { id: 'invest', label: '조사' },
   { id: 'library', label: '라이브러리' },
   { id: 'chars', label: '인물' },
   { id: 'episodes', label: '에피소드' },
@@ -109,6 +111,7 @@ export default function EditorApp() {
 
       <main className="ed-main">
         {tab === 'script' && (ep ? <ScriptTab key={ep.id} ep={ep} data={data} /> : <p className="ed-empty">에피소드 탭에서 에피소드를 추가하세요.</p>)}
+        {tab === 'invest' && (ep ? <InvestigationTab key={ep.id} ep={ep} data={data} /> : <p className="ed-empty">에피소드를 먼저 추가하세요.</p>)}
         {tab === 'library' && <LibraryTab data={data} />}
         {tab === 'chars' && <CharactersTab data={data} />}
         {tab === 'episodes' && <EpisodesTab data={data} current={ep?.id ?? ''} onSelect={setEpId} />}

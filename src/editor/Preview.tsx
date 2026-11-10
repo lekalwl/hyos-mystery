@@ -3,13 +3,17 @@ import type { Step } from '../engine/script';
 import { Stage } from '../engine/Stage';
 import { audio } from '../engine/audio';
 import { assetUrl } from '../content/store';
+import type { InvestigationDef } from '../content/types';
+import { Hotspots } from '../engine/Hotspots';
 
 /** 16:9 live preview of one step, text fully shown. */
-export function Preview({ step, index, total, onIndex, onPlay, sound, onSound }: {
+export function Preview({ step, index, total, onIndex, onPlay, sound, onSound, investigations }: {
   step: Step | undefined; index: number; total: number;
-  onIndex: (i: number) => void; onPlay: () => void;
+  onIndex: (i: number) => void; onPlay?: () => void;
   sound: boolean; onSound: (v: boolean) => void;
+  investigations?: InvestigationDef[];
 }) {
+  const inv = step?.invest ? investigations?.find((i) => i.id === step.invest) : undefined;
   useEffect(() => {
     if (!sound || !step) { audio.playBgm(null); return; }
     audio.playBgm(assetUrl(step.bgm));
@@ -28,6 +32,7 @@ export function Preview({ step, index, total, onIndex, onPlay, sound, onSound }:
                 stepKey={index}
                 visibleText={step.text}
                 hiddenText=""
+                overlay={inv ? <Hotspots inv={inv} preview /> : undefined}
                 box={
                   <div className="vn-box is-static">
                     {step.speaker && <span className="vn-name" style={step.speaker.color ? { color: step.speaker.color } : undefined}>{step.speaker.name}</span>}
@@ -47,7 +52,7 @@ export function Preview({ step, index, total, onIndex, onPlay, sound, onSound }:
         <span className="ed-count">{total ? `${index + 1} / ${total}` : '0 / 0'}</span>
         <button type="button" className="text-btn light" onClick={() => onIndex(Math.min(total - 1, index + 1))} disabled={index >= total - 1}>다음 ▶</button>
         <label className="ed-check"><input type="checkbox" checked={sound} onChange={(e) => onSound(e.target.checked)} /> 소리</label>
-        <button type="button" className="seal-btn small" onClick={onPlay} disabled={!total}>여기서부터 플레이</button>
+        {onPlay && <button type="button" className="seal-btn small" onClick={onPlay} disabled={!total}>여기서부터 플레이</button>}
       </div>
     </section>
   );

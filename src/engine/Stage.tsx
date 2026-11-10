@@ -17,10 +17,12 @@ interface Props {
   visibleText: string;
   hiddenText: string;
   box?: ReactNode;
+  /** drawn inside the camera layer, above the scene (investigation hotspots) */
+  overlay?: ReactNode;
   onClick?: () => void;
 }
 
-export function Stage({ step, stepKey, visibleText, hiddenText, box, onClick }: Props) {
+export function Stage({ step, stepKey, visibleText, hiddenText, box, overlay, onClick }: Props) {
   const bgUrl = assetUrl(step.bg);
   const cgUrl = assetUrl(step.cg);
   const itemUrl = assetUrl(step.item);
@@ -42,6 +44,7 @@ export function Stage({ step, stepKey, visibleText, hiddenText, box, onClick }: 
   return (
     <div className="stage-root" onClick={onClick}>
       <div ref={shakeRef} className="stage-shake">
+       <div className="stage-camera" style={cameraStyle(step)}>
         <Background url={bgUrl} transition={step.bgTransition} />
 
         <div className={`vn-sprites${step.item ? ' has-item' : ''}`}>
@@ -57,6 +60,8 @@ export function Stage({ step, stepKey, visibleText, hiddenText, box, onClick }: 
         )}
 
         {cgUrl && <img key={step.cg} className="vn-cg" src={cgUrl} alt="" />}
+        {overlay}
+       </div>
 
         <div className={`vn-dim${dimScene ? ' is-on' : ''}`} aria-hidden="true" />
         <div className={`vn-black${hideScene ? ' is-on' : ''}`} aria-hidden="true" />
@@ -82,6 +87,33 @@ export function Stage({ step, stepKey, visibleText, hiddenText, box, onClick }: 
       )}
     </div>
   );
+}
+
+function cameraStyle(step: Step): CSSProperties {
+  const c = step.camera ?? { x: 50, y: 50, zoom: 1, ms: 900 };
+  const ms = prefersReduced() ? 0 : c.ms;
+  return {
+    transform: c.zoom === 1 ? 'none' : `scale(${c.zoom}) translate(${50 - c.x}%, ${50 - c.y}%)`,
+    transition: `transform ${ms}ms cubic-bezier(.45,.05,.25,1)`,
+  };
+}
+const prefersReduced = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/** Show a new image only once it has loaded, so swaps never blank out. */
+function useLoadedSrc(url: string | null) {
+  const [shown, setShown] = useState(url);
+  useEffect(() => {
+    if (url === shown) return;
+    if (!url) { setShown(null); return; }
+    let alive = true;
+    const img = new Image();
+    img.src = url;
+    const done = () => { if (alive) setShown(url); };
+    if (img.complete) done();
+    else (img.decode ? img.decode() : Promise.reject()).then(done, () => { img.onload = done; img.onerror = done; if (img.complete) done(); });
+    return () => { alive = false; };
+  }, [url, shown]);
+  return shown;
 }
 
 function Background({ url, transition }: { url: string | null; transition: Step['bgTransition'] }) {
@@ -124,19 +156,10 @@ function useReplayClass(ref: React.RefObject<HTMLElement>, base: string, cls: st
 }
 
 function Sprite({ c, stepKey, quiet }: { c: StageChar; stepKey: string | number; quiet: boolean }) {
-  const url = assetUrl(c.sprite);
-  const [prev, setPrev] = useState<string | null>(null);
-  const cur = useRef(url);
+  // expression changes swap instantly (no cross-fade), once the new image is ready
+  const url = useLoadedSrc(assetUrl(c.sprite));
   const motionRef = useRef<HTMLDivElement>(null);
   const animRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (cur.current !== url) {
-      setPrev(cur.current);
-      cur.current = url;
-      const t = window.setTimeout(() => setPrev(null), 260);
-      return () => window.clearTimeout(t);
-    }
-  }, [url]);
 
   const motion = c.exit ? `out-${c.exit}` : c.enter ? `in-${c.enter}` : '';
   useReplayClass(motionRef, 'vn-char-motion', motion, stepKey);
@@ -144,7 +167,7 @@ function Sprite({ c, stepKey, quiet }: { c: StageChar; stepKey: string | number;
 
   // characters right of centre face left (mirror), unless turned off per character
   const def = getContent().data.characters.find((x) => x.id === c.id);
-  const flip = c.x > 55 && !def?.noFlip;
+  const flip = (c.x > 55 && !def?.noFlip) !== (c.pose === 'back');
 
   // Short characters are raised so at least the upper body clears the
   // dialogue box. Based on the character's default sprite, so the figure
@@ -172,9 +195,10 @@ function Sprite({ c, stepKey, quiet }: { c: StageChar; stepKey: string | number;
       style={{ '--x': `${c.x}%`, '--lift': `${lift}cqh` } as CSSProperties}
     >
       <div ref={motionRef} className="vn-char-motion">
-        <div ref={animRef} className="vn-char-anim">
-          {prev && <img className="vn-sprite-img is-prev" src={prev} alt="" />}
-          {url && <img className={`vn-sprite-img${prev ? ' is-next' : ''}`} src={url} alt="" />}
+        <div className={`vn-char-pose${c.pose && c.pose !== 'back' ? ` pose-${c.pose}` : ''}`}>
+          <div ref={animRef} className="vn-char-anim">
+            {url && <img className="vn-sprite-img" src={url} alt="" draggable={false} />}
+          </div>
         </div>
       </div>
     </div>

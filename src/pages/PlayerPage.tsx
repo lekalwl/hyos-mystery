@@ -9,6 +9,7 @@ import { SoundPanel } from '../components/player/SoundPanel';
 import { useContent, assetUrl, isOperatorBrowser } from '../content/store';
 import { compileScript, type Step } from '../engine/script';
 import { Stage } from '../engine/Stage';
+import { Hotspots, requiredSpots } from '../engine/Hotspots';
 import { audio } from '../engine/audio';
 import { markSeen } from '../lib/seen';
 
@@ -18,9 +19,13 @@ export function PlayerPage({ id }: { id: string }) {
   const { data } = useContent();
   const ep = data.episodes.find((e) => e.id === id);
   const steps = useMemo(
-    () => (ep ? compileScript(ep.script, { characters: data.characters, assets: data.assets, startOutfit: ep.startOutfit }).steps : []),
+    () => (ep ? compileScript(ep.script, { characters: data.characters, assets: data.assets, startOutfit: ep.startOutfit, investigations: ep.investigations }).steps : []),
     [ep, data.characters, data.assets],
   );
+
+  // investigation progress for the current step
+  const [invest, setInvest] = useState<{ index: number; done: string[]; sub: { hid: string; steps: Step[]; i: number } | null }>({ index: -1, done: [], sub: null });
+  const [invLog, setInvLog] = useState<Record<number, Step[]>>({});
 
   const [index, setIndex] = useState(() => takeStart(id));
   const [shown, setShown] = useState(0);
@@ -45,7 +50,15 @@ export function PlayerPage({ id }: { id: string }) {
   const modalOpen = logOpen || bmMode !== null;
 
   const safeIndex = Math.min(index, Math.max(0, steps.length - 1));
-  const step: Step | undefined = steps[safeIndex];
+  const baseStep: Step | undefined = steps[safeIndex];
+  const invDef = baseStep?.invest ? ep?.investigations?.find((i) => i.id === baseStep.invest) : undefined;
+  const invState = invest.index === safeIndex ? invest : { index: safeIndex, done: [] as string[], sub: null };
+  const sub = invDef ? invState.sub : null;
+  const step: Step | undefined = sub ? sub.steps[sub.i] : baseStep;
+  const stepKey = `${safeIndex}:${sub?.hid ?? ''}:${sub?.i ?? ''}`;
+  const doneSet = new Set(invState.done);
+  const invRequired = invDef ? requiredSpots(invDef) : [];
+  const invComplete = !!invDef && invRequired.every((h) => doneSet.has(h.id));
   const full = step?.text.length ?? 0;
   const typing = shown < full;
 
@@ -61,7 +74,17 @@ export function PlayerPage({ id }: { id: string }) {
       if (n >= full) window.clearInterval(t);
     }, CHAR_MS);
     return () => window.clearInterval(t);
-  }, [safeIndex, step, full]);
+  }, [stepKey, step, full]);
+
+  // warm the cache with the next few scenes' images so swaps are instant
+  useEffect(() => {
+    for (const s of steps.slice(safeIndex + 1, safeIndex + 4)) {
+      for (const id of [s.bg, s.cg, s.item, ...s.chars.map((c) => c.sprite)]) {
+        const u = assetUrl(id);
+        if (u) { const img = new Image(); img.src = u; }
+      }
+    }
+  }, [safeIndex, steps]);
 
   // remember what the reader has seen (gallery / profile spoiler guard)
   useEffect(() => {
@@ -80,12 +103,40 @@ export function PlayerPage({ id }: { id: string }) {
   }, [step]);
   useEffect(() => () => audio.stopAll(), []);
 
+  const next = useCallback(() => {
+    if (safeIndex < steps.length - 1) setIndex(safeIndex + 1);
+    else setEnded(true);
+  }, [safeIndex, steps.length]);
+
   const advance = useCallback(() => {
     if (modalOpen || ended) return;
     if (typing) { setShown(full); return; }
-    if (safeIndex < steps.length - 1) setIndex(safeIndex + 1);
-    else setEnded(true);
-  }, [modalOpen, ended, typing, full, safeIndex, steps.length]);
+    if (invDef) {
+      if (!sub) { if (invComplete) next(); return; }
+      if (sub.i < sub.steps.length - 1) { setInvest({ ...invState, sub: { ...sub, i: sub.i + 1 } }); return; }
+      // finished looking at one spot
+      const done = invState.done.includes(sub.hid) ? invState.done : [...invState.done, sub.hid];
+      setInvest({ index: safeIndex, done, sub: null });
+      if (invRequired.every((h) => done.includes(h.id))) next();
+      return;
+    }
+    next();
+  }, [modalOpen, ended, typing, full, invDef, sub, invState, invComplete, invRequired, safeIndex, next]);
+
+  const examine = (hid: string) => {
+    if (!invDef || !baseStep || !ep || sub || modalOpen) return;
+    const h = invDef.hotspots.find((x) => x.id === hid);
+    if (!h) return;
+    const subSteps = compileScript(h.script, { characters: data.characters, assets: data.assets, startOutfit: ep.startOutfit, from: baseStep }).steps;
+    if (!subSteps.length) {
+      const done = invState.done.includes(hid) ? invState.done : [...invState.done, hid];
+      setInvest({ index: safeIndex, done, sub: null });
+      if (invRequired.every((x) => done.includes(x.id))) next();
+      return;
+    }
+    setInvLog((m) => ({ ...m, [safeIndex]: [...(m[safeIndex] ?? []), ...subSteps] }));
+    setInvest({ ...invState, sub: { hid, steps: subSteps, i: 0 } });
+  };
 
   const toList = () => navigate('episodes');
 
@@ -157,11 +208,17 @@ export function PlayerPage({ id }: { id: string }) {
   const loadFrom = (b: Bookmark) => {
     setEnded(false);
     setIndex(Math.min(b.index, steps.length - 1));
+    setInvest({ index: -1, done: [], sub: null });
     setBmMode(null);
     showToast(`${b.slot + 1}번 책갈피를 펼쳤습니다`);
   };
 
-  const box = !ended ? (
+  const box = ended ? null : invDef && !sub ? (
+    <p className="vn-invest-prompt" aria-live="polite">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6" fill="none" stroke="currentColor" strokeWidth="1.8" /><path d="M14.5 14.5 L20 20" stroke="currentColor" strokeWidth="2" /></svg>
+      {step.text}
+    </p>
+  ) : !ended ? (
     <button type="button" className="vn-box" onClick={(e) => { e.stopPropagation(); advance(); }} aria-label="다음 대사">
       {sp && <span className="vn-name" style={sp.color ? { color: sp.color } : undefined}>{sp.name}</span>}
       <span className={`vn-text${sp ? '' : ' is-narration'}${step.thought ? ' is-thought' : ''}`} aria-live="polite">
@@ -170,7 +227,7 @@ export function PlayerPage({ id }: { id: string }) {
       </span>
       <span className="vn-meta">
         <span>{safeIndex + 1} / {steps.length}</span>
-        {!typing && <span className="vn-next" aria-hidden="true">▾</span>}
+        {!typing && !(invDef && !sub) && <span className="vn-next" aria-hidden="true">▾</span>}
       </span>
     </button>
   ) : null;
@@ -180,12 +237,21 @@ export function PlayerPage({ id }: { id: string }) {
       <div className="vn-stage" onWheel={(e) => { if (e.deltaY < 0 && !modalOpen) setLogOpen(true); }}>
         <Stage
           step={step}
-          stepKey={safeIndex}
+          stepKey={stepKey}
           visibleText={step.text.slice(0, shown)}
           hiddenText={step.text.slice(shown)}
           box={box}
+          overlay={invDef && !sub && !ended ? <Hotspots inv={invDef} done={doneSet} onPick={examine} /> : undefined}
           onClick={() => { if (step.narr && step.narr !== 'box') advance(); }}
         />
+
+        {invDef && !ended && (
+          <p className="vn-invest-bar" role="status">
+            <span>조사</span>
+            <strong>{invRequired.filter((h) => doneSet.has(h.id)).length} / {invRequired.length}</strong>
+            {invComplete && !sub && <button type="button" className="text-btn" onClick={next}>다음으로 ▸</button>}
+          </p>
+        )}
 
         <header className="vn-top">
           <button type="button" className="vn-btn" onClick={toList}>
@@ -258,12 +324,12 @@ export function PlayerPage({ id }: { id: string }) {
             <button type="button" className="vn-btn" onClick={() => setLogOpen(false)} autoFocus>닫기</button>
           </div>
           <div className="vn-log-body" ref={logRef}>
-            {steps.slice(0, safeIndex + 1).map((s, i) => (
-              <p key={i} className="log-line">
-                <span className="log-name" style={s.speaker?.color ? { color: s.speaker.color } : undefined}>{s.speaker ? s.speaker.name : '—'}</span>
-                <span className={s.thought ? 'is-thought-log' : undefined}>{s.thought ? `( ${s.text} )` : s.text}</span>
+            {steps.slice(0, safeIndex + 1).flatMap((s, i) => (s.invest ? invLog[i] ?? [] : [s]).map((x, j) => (
+              <p key={`${i}-${j}`} className="log-line">
+                <span className="log-name" style={x.speaker?.color ? { color: x.speaker.color } : undefined}>{x.speaker ? x.speaker.name : '—'}</span>
+                <span className={x.thought ? 'is-thought-log' : undefined}>{x.thought ? `( ${x.text} )` : x.text}</span>
               </p>
-            ))}
+            )))}
           </div>
         </div>
       )}

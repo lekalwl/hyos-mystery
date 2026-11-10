@@ -1,4 +1,4 @@
-import { BG_TRANSITIONS, DIRECTIVES, LINE_MODS, NARR_STYLES, POSITIONS, SCREEN_FX, SPRITE_ANIMS, type TagDef } from '../engine/vocab';
+import { BG_TRANSITIONS, CAMERA_SPEEDS, POSES, DIRECTIVES, LINE_MODS, NARR_STYLES, POSITIONS, SCREEN_FX, SPRITE_ANIMS, type TagDef } from '../engine/vocab';
 import { SIZE_GUIDE } from './assets';
 
 const Table = ({ title, rows, prefix = '#' }: { title: string; rows: TagDef[]; prefix?: string }) => (
@@ -46,6 +46,24 @@ export function HelpTab() {
       </section>
       <Table title="무대 명령 (@로 시작하는 줄)" rows={DIRECTIVES} prefix="@" />
       <Table title="표정 이외의 인물 태그 — 동작" rows={SPRITE_ANIMS} />
+      <Table title="자세 — 풀 때까지 유지 (#원래대로로 풀기)" rows={POSES} />
+      <section className="ed-help-sec">
+        <h3>카메라</h3>
+        <pre>{`@카메라 엘리            ← 엘리 얼굴 쪽으로 1.8배 확대
+@카메라 엘리 2.5        ← 배율 지정
+@카메라 왼쪽            ← 왼쪽 자리 쪽으로 1.5배
+@카메라 70 30 2         ← 가로 70%, 세로 30% 지점을 2배로 (0~100)
+@카메라 전체 #천천히     ← 다시 전체 화면으로, 천천히`}</pre>
+        <p>카메라는 바꿀 때까지 유지됩니다. 대본 탭 「카메라 → 화면에서 위치 고르기」로 눌러서 좌표를 정할 수 있습니다.</p>
+      </section>
+      <Table title="카메라 속도 (@카메라 줄 뒤에)" rows={CAMERA_SPEEDS} />
+      <section className="ed-help-sec">
+        <h3>조사</h3>
+        <pre>{`(#진지) 인물 A: 이 방을 살펴보자.
+@조사 서재조사          ← 조사 탭에서 만든 조사 장면
+(#놀람) 인물 B: 역시 범인은…   ← 필수 증거를 다 보면 여기로`}</pre>
+        <p>조사 탭에서 배경 위에 증거 칸을 그리고, 칸마다 눌렀을 때 나올 대화를 씁니다. 「선택」으로 표시한 칸은 안 봐도 넘어갑니다.</p>
+      </section>
       <Table title="위치" rows={POSITIONS} />
       <Table title="해설 연출" rows={NARR_STYLES} />
       <Table title="대사 꾸밈" rows={LINE_MODS} />

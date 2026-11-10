@@ -1,7 +1,7 @@
-import type { AssetDef, AssetKind, CharacterDef } from '../content/types';
+import type { AssetDef, AssetKind, CharacterDef, InvestigationDef } from '../content/types';
 import { defaultOutfit, findSprite, outfitsOf } from '../content/sprites';
 import {
-  ANIM_BY_KEY, ANIM_BY_NAME, BGT_BY_NAME, DIR_BY_NAME, FX_BY_NAME, MOD_BY_NAME, NARR_BY_NAME, POS_BY_NAME, POSITIONS,
+  ANIM_BY_KEY, ANIM_BY_NAME, BGT_BY_NAME, CAM_SPEED_BY_NAME, DIR_BY_NAME, POSE_BY_NAME, FX_BY_NAME, MOD_BY_NAME, NARR_BY_NAME, POS_BY_NAME, POSITIONS,
   type NarrStyle,
 } from './vocab';
 
@@ -33,8 +33,14 @@ export interface StageChar {
   enter?: string;
   exit?: string;
   anim?: string;
+  /** persistent pose (see POSES) */
+  pose?: string;
   speaking?: boolean;
 }
+
+/** Camera: centre point in % of the stage, zoom (1 = whole stage), move duration. */
+export interface Camera { x: number; y: number; zoom: number; ms: number }
+export const CAMERA_HOME: Camera = { x: 50, y: 50, zoom: 1, ms: 900 };
 
 export interface Step {
   /** 0-based source line of the text that produced this step */
@@ -52,6 +58,9 @@ export interface Step {
   fx: string[];
   bgm: string | null;
   se: string[];
+  camera: Camera;
+  /** this step is an investigation scene (investigation id) */
+  invest?: string;
 }
 
 export interface Diagnostic {
@@ -65,6 +74,10 @@ export interface CompileContext {
   assets: AssetDef[];
   /** episode's starting outfit for everyone who has it */
   startOutfit?: string;
+  /** investigations of the episode, for @조사 */
+  investigations?: InvestigationDef[];
+  /** start from this stage state instead of an empty stage (investigation dialogue) */
+  from?: Step;
 }
 
 const TAG_GROUP = /^\(([^)]*)\)\s*/;
@@ -111,6 +124,7 @@ export function compileScript(source: string, ctx: CompileContext) {
     const list = outfitsOf(def, ctx.assets);
     return ctx.startOutfit && list.includes(ctx.startOutfit) ? ctx.startOutfit : defaultOutfit(def, ctx.assets);
   };
+  const resolveAssetId = (kind: AssetKind, id: string) => ctx.assets.find((a) => a.kind === kind && a.id === id)?.id;
   const resolveAsset = (kind: AssetKind, name: string, line: number) => {
     const a = assetByName(kind, name);
     if (a) return a.id;
@@ -125,7 +139,17 @@ export function compileScript(source: string, ctx: CompileContext) {
   let item: string | null = null;
   let blackout = false;
   let bgm: string | null = null;
+  let camera: Camera = { ...CAMERA_HOME };
   const chars = new Map<string, StageChar>();
+  if (ctx.from) {
+    const f = ctx.from;
+    bg = f.bg; cg = f.cg; item = null; blackout = f.blackout; bgm = f.bgm; camera = { ...f.camera };
+    for (const c of f.chars) {
+      if (c.exit) continue;
+      chars.set(c.id, { ...c, enter: undefined, anim: undefined, speaking: undefined });
+      wearing.set(c.id, c.outfit);
+    }
+  }
   let exiting: StageChar[] = [];
   let pendingFx: string[] = [];
   let pendingSe: string[] = [];
@@ -143,6 +167,8 @@ export function compileScript(source: string, ctx: CompileContext) {
       const low = t.toLowerCase();
       const pos = POS_BY_NAME.get(low);
       if (pos) { c.x = pos.x; c.posKey = pos.key; continue; }
+      const pose = POSE_BY_NAME.get(low);
+      if (pose) { if (pose.key === 'none') delete c.pose; else c.pose = pose.key; continue; }
       const anim = ANIM_BY_NAME.get(low);
       if (anim) {
         if (anim.kind === 'enter') c.enter = anim.key;
@@ -173,10 +199,10 @@ export function compileScript(source: string, ctx: CompileContext) {
     return c;
   };
 
-  const emit = (s: Omit<Step, 'bg' | 'bgTransition' | 'cg' | 'item' | 'blackout' | 'chars' | 'fx' | 'bgm' | 'se'>) => {
+  const emit = (s: Omit<Step, 'bg' | 'bgTransition' | 'cg' | 'item' | 'blackout' | 'chars' | 'fx' | 'bgm' | 'se' | 'camera'>) => {
     steps.push({
       ...s,
-      bg, bgTransition, cg, item, blackout, bgm,
+      bg, bgTransition, cg, item, blackout, bgm, camera: { ...camera },
       chars: [...[...chars.values()].map((c) => ({ ...c })), ...exiting],
       fx: pendingFx,
       se: pendingSe,
@@ -223,6 +249,44 @@ export function compileScript(source: string, ctx: CompileContext) {
             else if (fx.key === 'unblackout') blackout = false;
             else pendingFx.push(fx.key);
           }
+          return;
+        }
+        case 'camera': {
+          const speed = tags.map((t) => CAM_SPEED_BY_NAME.get(t.toLowerCase())).find(Boolean);
+          const ms = speed?.ms ?? CAMERA_HOME.ms;
+          const words = arg.split(/\s+/).filter(Boolean);
+          if (!words.length || /^(전체|원래대로|처음|reset|home|끝)$/i.test(words[0])) { camera = { ...CAMERA_HOME, ms }; return; }
+          const nums = words.map(Number);
+          let x: number, y: number, zoom: number;
+          if (words.length >= 2 && !isNaN(nums[0]) && !isNaN(nums[1])) {
+            x = nums[0]; y = nums[1]; zoom = isNaN(nums[2]) ? camera.zoom : nums[2];
+          } else {
+            const target = words[0].toLowerCase();
+            zoom = isNaN(nums[1]) ? 1.8 : nums[1];
+            const pos = POS_BY_NAME.get(target);
+            const def = charByName.get(target);
+            if (def) {
+              const c = chars.get(def.id);
+              if (!c) diagnostics.push({ line: ln, level: 'warn', msg: `"${def.name}"은(는) 화면에 없어 가운데를 비춤` });
+              x = c?.x ?? 50; y = 34;
+            } else if (pos) { x = pos.x; y = 45; zoom = isNaN(nums[1]) ? 1.5 : nums[1]; }
+            else { diagnostics.push({ line: ln, level: 'error', msg: '@카메라 x y 배율 / @카메라 인물이름 배율 / @카메라 전체' }); return; }
+          }
+          camera = clampCamera({ x, y, zoom, ms });
+          return;
+        }
+        case 'invest': {
+          const inv = ctx.investigations?.find((i) => i.name.toLowerCase() === arg.toLowerCase());
+          if (!inv) { diagnostics.push({ line: ln, level: 'error', msg: arg ? `조사 탭에 없는 조사: "${arg}"` : '@조사 뒤에 조사 이름이 필요함' }); return; }
+          if (!inv.hotspots.length) diagnostics.push({ line: ln, level: 'warn', msg: `조사 "${inv.name}"에 조사할 곳이 없음` });
+          if (inv.bg) { bg = resolveAssetId('bg', inv.bg) ?? bg; cg = null; }
+          const keep = new Map(chars);
+          if (!inv.keepChars) {
+            for (const c of chars.values()) exiting.push({ ...c, exit: 'fadeout', enter: undefined, anim: undefined });
+            chars.clear();
+          }
+          emit({ line: ln, speaker: null, text: inv.prompt?.trim() || '조사할 곳을 눌러 보세요.', narr: 'box', thought: false, invest: inv.id });
+          if (!inv.keepChars) for (const [k, c] of keep) chars.set(k, { ...c, enter: 'fadein' });
           return;
         }
         case 'outfit': {
@@ -327,6 +391,14 @@ export function compileScript(source: string, ctx: CompileContext) {
 
   if (!steps.length) diagnostics.push({ line: 0, level: 'warn', msg: '표시할 대사·해설 줄이 없음' });
   return { steps, diagnostics };
+}
+
+export function clampCamera(c: Camera): Camera {
+  const zoom = Math.min(4, Math.max(0.5, c.zoom || 1));
+  if (zoom <= 1) return { ...c, zoom, x: 50, y: 50 };
+  const half = 50 / zoom;
+  const cl = (v: number) => Math.min(100 - half, Math.max(half, v));
+  return { ...c, zoom, x: cl(c.x), y: cl(c.y) };
 }
 
 function kindWord(k: AssetKind) {

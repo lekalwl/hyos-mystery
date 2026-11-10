@@ -37,9 +37,50 @@ export const SPRITE_ANIMS: (TagDef & { kind: AnimKind })[] = [
   { key: 'shakehead', kind: 'once', names: ['도리도리', 'shakehead'], desc: '좌우로 고개를 젓듯 흔들림' },
   { key: 'flinch', kind: 'once', names: ['움찔', 'flinch'], desc: '움찔하며 뒤로 살짝 물러남' },
   { key: 'approach', kind: 'once', names: ['다가섬', 'approach'], desc: '한 걸음 다가오듯 커졌다 돌아옴' },
+  { key: 'spin', kind: 'once', names: ['빙글빙글', '빙글', 'spin'], desc: '제자리에서 빙글빙글 두 바퀴 돎' },
+  { key: 'turn', kind: 'once', names: ['한바퀴', 'turn'], desc: '제자리에서 한 바퀴 휙 돎' },
+  { key: 'squash', kind: 'once', names: ['꾹', '눌림', 'squash'], desc: '위에서 꾹 눌렸다가 튕겨 돌아옴' },
+  { key: 'stretch', kind: 'once', names: ['쭉', '늘어남', 'stretch'], desc: '위로 쭉 늘어났다 돌아옴' },
+  { key: 'stomp', kind: 'once', names: ['쿵', 'stomp'], desc: '쿵 하고 내려찍듯 내려앉았다 올라옴' },
+  { key: 'bigjump', kind: 'once', names: ['펄쩍', 'bigjump'], desc: '펄쩍 높이 뛰어오름' },
+  { key: 'wobble', kind: 'once', names: ['휘청', 'wobble'], desc: '중심을 잃고 휘청거림' },
+  { key: 'shiver', kind: 'once', names: ['부르르', 'shiver'], desc: '부르르 짧게 떨고 멈춤' },
+  { key: 'bow', kind: 'once', names: ['인사', '꾸벅', 'bow'], desc: '꾸벅 고개 숙여 인사' },
+  { key: 'dash', kind: 'once', names: ['돌진', 'dash'], desc: '앞으로 확 달려들었다 돌아옴' },
+  { key: 'backstep', kind: 'once', names: ['뒷걸음', 'backstep'], desc: '놀라 크게 뒷걸음질' },
   { key: 'tremble', kind: 'loop', names: ['떨림', '바들바들', 'tremble'], desc: '대사 동안 바들바들 떨림' },
   { key: 'sway', kind: 'loop', names: ['흔들흔들', 'sway'], desc: '대사 동안 천천히 좌우로 흔들림' },
   { key: 'breathe', kind: 'loop', names: ['숨참', '헐떡', 'breathe'], desc: '숨을 몰아쉬듯 어깨가 들썩임' },
+  { key: 'float', kind: 'loop', names: ['둥실', 'float'], desc: '대사 동안 둥실둥실 떠오름' },
+  { key: 'bounce', kind: 'loop', names: ['깡총', 'bounce'], desc: '대사 동안 계속 깡총깡총 뜀' },
+  { key: 'spinloop', kind: 'loop', names: ['계속회전', 'spinloop'], desc: '대사 동안 계속 빙글빙글 돎' },
+];
+
+/**
+ * Poses stay on until another pose or #원래대로.
+ * (Unlike animations, which play once per line.)
+ */
+export const POSES: TagDef[] = [
+  { key: 'fallen', names: ['쓰러짐', '쓰러진다', 'fallen'], desc: '옆으로 쓰러져 누움 (유지)' },
+  { key: 'faint', names: ['기절', 'faint'], desc: '뒤로 넘어가며 기절 (유지)' },
+  { key: 'kneel', names: ['주저앉음', 'kneel'], desc: '털썩 주저앉음 (유지)' },
+  { key: 'crouch', names: ['웅크림', 'crouch'], desc: '몸을 웅크림 (유지)' },
+  { key: 'tilt', names: ['갸웃', 'tilt'], desc: '고개를 갸웃하듯 기울임 (유지)' },
+  { key: 'lean', names: ['기댐', 'lean'], desc: '몸을 앞으로 기울임 (유지)' },
+  { key: 'back', names: ['뒤돌아섬', '뒤돌기', 'back'], desc: '반대쪽을 봄 (좌우 반전 유지)' },
+  { key: 'small', names: ['작아짐', 'small'], desc: '조그맣게 작아짐 (유지)' },
+  { key: 'big', names: ['커짐', 'big'], desc: '크게 커짐 (유지)' },
+  { key: 'ghost', names: ['흐릿', '투명', 'ghost'], desc: '반투명하게 흐려짐 (유지)' },
+  { key: 'shadow', names: ['실루엣', 'shadow'], desc: '검은 실루엣 (유지)' },
+  { key: 'none', names: ['원래대로', '일어섬', 'normal'], desc: '자세를 원래대로' },
+];
+
+/** Camera move speeds for @카메라. */
+export const CAMERA_SPEEDS: (TagDef & { ms: number })[] = [
+  { key: 'normal', names: ['보통', 'normal'], ms: 900, desc: '0.9초에 걸쳐 이동 (기본)' },
+  { key: 'slow', names: ['천천히', 'slow'], ms: 2200, desc: '2.2초에 걸쳐 천천히' },
+  { key: 'fast', names: ['빠르게', 'fast'], ms: 350, desc: '0.35초 만에 휙' },
+  { key: 'cut', names: ['즉시', 'cut'], ms: 0, desc: '바로 전환' },
 ];
 
 /** Whole-screen effects, fired when the line appears. */
@@ -89,6 +130,8 @@ export const DIRECTIVES: TagDef[] = [
   { key: 'exit', names: ['퇴장', 'exit'], desc: '@퇴장 인물 (#왼쪽으로 / #오른쪽으로)' },
   { key: 'exitall', names: ['모두퇴장', 'exitall'], desc: '@모두퇴장 — 모든 인물 퇴장' },
   { key: 'fx', names: ['화면', 'fx'], desc: '@화면 #암전 / #번쩍 … — 다음 줄에 화면 효과' },
+  { key: 'camera', names: ['카메라', 'camera'], desc: '@카메라 x y 배율 / @카메라 인물 배율 / @카메라 전체 (#천천히 #빠르게 #즉시)' },
+  { key: 'invest', names: ['조사', 'investigate'], desc: '@조사 이름 — 조사 탭에서 만든 조사 장면을 시작' },
   { key: 'outfit', names: ['의상', 'outfit'], desc: '@의상 인물 의상이름 / @의상 모두 인게임 — 이후 그 의상으로' },
 ];
 
@@ -104,4 +147,6 @@ export const NARR_BY_NAME = index(NARR_STYLES);
 export const MOD_BY_NAME = index(LINE_MODS);
 export const BGT_BY_NAME = index(BG_TRANSITIONS);
 export const DIR_BY_NAME = index(DIRECTIVES);
+export const POSE_BY_NAME = index(POSES);
+export const CAM_SPEED_BY_NAME = index(CAMERA_SPEEDS);
 export const ANIM_BY_KEY = new Map(SPRITE_ANIMS.map((a) => [a.key, a]));

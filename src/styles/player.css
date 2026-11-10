@@ -303,6 +303,7 @@
 /* ═════════ Stage (shared by player and editor preview) ═════════ */
 .stage-root { position: absolute; inset: 0; overflow: hidden; container-type: size; }
 .stage-shake { position: absolute; inset: 0; }
+.stage-camera { position: absolute; inset: 0; transform-origin: 50% 50%; will-change: transform; }
 .vn-bg.bg-in-fade { animation: bg-in .8s ease both; }
 .vn-bg.bg-in-cut { animation: none; }
 .vn-bg.bg-in-black { animation: bg-black 1.4s ease both; }
@@ -319,16 +320,13 @@
 }
 .vn-char.is-quiet { filter: brightness(.6) saturate(.75); }
 .vn-sprites.has-item .vn-char { filter: brightness(.45) saturate(.6); }
-.vn-char-motion, .vn-char-anim { position: absolute; inset: 0; transform-origin: 50% 100%; }
+.vn-char-motion, .vn-char-anim, .vn-char-pose { position: absolute; inset: 0; transform-origin: 50% 100%; }
+.vn-char-pose { transition: transform .6s cubic-bezier(.5,0,.3,1), opacity .5s ease, filter .5s ease; }
 .vn-sprite-img {
   position: absolute; left: 50%; bottom: 0; height: 100%; width: auto; max-width: none;
   transform: translateX(-50%);
   filter: drop-shadow(0 0 18px rgba(0,0,0,.55));
 }
-.vn-sprite-img.is-prev { animation: spr-out .26s ease forwards; }
-.vn-sprite-img.is-next { animation: spr-in .26s ease both; }
-@keyframes spr-out { to { opacity: 0; } }
-@keyframes spr-in { from { opacity: 0; } }
 
 /* enter / exit */
 .in-fadein { animation: in-fade .55s ease both; }
@@ -367,6 +365,104 @@
 @keyframes a-sw { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-.8deg); } 75% { transform: rotate(.8deg); } }
 .anim-breathe { animation: a-br 1s ease-in-out infinite; }
 @keyframes a-br { 50% { transform: translateY(.7%) scaleY(.99); } }
+
+/* more one-shots */
+.anim-spin { animation: a-spin 1s ease-in-out both; }
+@keyframes a-spin { from { transform: perspective(900px) rotateY(0); } to { transform: perspective(900px) rotateY(720deg); } }
+.anim-turn { animation: a-turn .55s ease-in-out both; }
+@keyframes a-turn { from { transform: perspective(900px) rotateY(0); } to { transform: perspective(900px) rotateY(360deg); } }
+.anim-squash { animation: a-sq .6s cubic-bezier(.3,.7,.4,1.4) both; }
+@keyframes a-sq { 0% { transform: none; } 25% { transform: scale(1.12, .78); } 55% { transform: scale(.95, 1.06); } 80% { transform: scale(1.02, .98); } 100% { transform: none; } }
+.anim-stretch { animation: a-st .6s ease-out both; }
+@keyframes a-st { 0%,100% { transform: none; } 35% { transform: scale(.9, 1.14); } 70% { transform: scale(1.03, .97); } }
+.anim-stomp { animation: a-stomp .5s ease-in both; }
+@keyframes a-stomp { 0% { transform: none; } 30% { transform: translateY(-4%); } 55% { transform: translateY(1.5%) scale(1.06, .92); } 100% { transform: none; } }
+.anim-bigjump { animation: a-bj .8s cubic-bezier(.3,.6,.4,1) both; }
+@keyframes a-bj { 0% { transform: none; } 15% { transform: scale(1.04, .94); } 45% { transform: translateY(-18%) scale(.97, 1.04); } 80% { transform: translateY(0) scale(1.05, .95); } 100% { transform: none; } }
+.anim-wobble { animation: a-wob 1s ease-in-out both; }
+@keyframes a-wob { 0%,100% { transform: none; } 20% { transform: rotate(-5deg); } 40% { transform: rotate(4deg); } 60% { transform: rotate(-3deg); } 80% { transform: rotate(1.5deg); } }
+.anim-shiver { animation: a-tr .06s linear 8 both; }
+.anim-bow { animation: a-bow 1s ease-in-out both; }
+@keyframes a-bow { 0%,100% { transform: none; } 35%,60% { transform: translateY(3%) scaleY(.94) rotate(-1deg); } }
+.anim-dash { animation: a-dash .7s cubic-bezier(.2,.9,.3,1) both; }
+@keyframes a-dash { 0% { transform: none; } 30% { transform: scale(1.16) translateY(3%); } 100% { transform: none; } }
+.anim-backstep { animation: a-bs .8s ease-out both; }
+@keyframes a-bs { 0% { transform: none; } 25% { transform: scale(.88) translateY(-2%); } 100% { transform: none; } }
+.anim-float { animation: a-fl2 2.4s ease-in-out infinite; }
+@keyframes a-fl2 { 0%,100% { transform: none; } 50% { transform: translateY(-3%); } }
+.anim-bounce { animation: a-bn .5s ease-out infinite; }
+@keyframes a-bn { 0%,100% { transform: none; } 40% { transform: translateY(-3.5%); } 70% { transform: translateY(0) scale(1.03, .97); } }
+.anim-spinloop { animation: a-sl 1.2s linear infinite; }
+@keyframes a-sl { from { transform: perspective(900px) rotateY(0); } to { transform: perspective(900px) rotateY(360deg); } }
+
+/* poses (persist between lines) */
+.pose-fallen, .pose-faint { transform-origin: 50% 80%; }
+.pose-fallen { transform: translateY(-12%) rotate(80deg); }          /* head falls toward the centre */
+.vn-char.is-flipped .pose-fallen { transform: translateY(-12%) rotate(-80deg); }
+.pose-faint { transform: translateY(-10%) rotate(-76deg); filter: brightness(.85); }
+.vn-char.is-flipped .pose-faint { transform: translateY(-10%) rotate(76deg); }
+.pose-kneel { transform: translateY(16%) scaleY(.9); }
+.pose-crouch { transform: translateY(10%) scale(.92, .82); }
+.pose-tilt { transform: rotate(-6deg); }
+.pose-lean { transform: translateY(2%) rotate(5deg) scale(1.04); }
+.pose-small { transform: scale(.6); }
+.pose-big { transform: scale(1.3); }
+.pose-ghost { opacity: .45; }
+.pose-shadow { filter: brightness(0); }
+.vn-char:has(.pose-fallen), .vn-char:has(.pose-faint) { z-index: 0; }
+
+/* ───────── Investigation ───────── */
+.vn-hotspots { /* same box the 16:9 background covers, so spots stay on their objects */
+  position: absolute; z-index: 2; left: 50%; top: 50%;
+  width: max(100cqw, 177.78cqh); aspect-ratio: 16 / 9; transform: translate(-50%, -50%);
+}
+.vn-hotspot {
+  position: absolute; display: block; padding: 0; margin: 0; cursor: zoom-in;
+  background: transparent; border: 1px solid transparent; border-radius: 6px;
+  transition: background .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+.vn-hotspot::after { /* gentle shimmer so spots can be found */
+  content: ''; position: absolute; inset: 0; border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgba(240,220,176,.0);
+  animation: hs-glint 3.6s ease-in-out infinite;
+}
+@keyframes hs-glint { 0%,70%,100% { box-shadow: inset 0 0 0 1px rgba(240,220,176,0); } 85% { box-shadow: inset 0 0 0 1px rgba(240,220,176,.4), 0 0 2cqh rgba(240,220,176,.25); } }
+.vn-hotspot:hover, .vn-hotspot:focus-visible {
+  background: rgba(240,220,176,.12); border-color: rgba(240,220,176,.85);
+  box-shadow: 0 0 0 1px rgba(0,0,0,.4), 0 0 3cqh rgba(240,220,176,.35);
+  outline: none;
+}
+.vn-hotspot-label {
+  position: absolute; left: 50%; bottom: calc(100% + 6px); transform: translateX(-50%);
+  white-space: nowrap; padding: 3px 10px; font-size: 13px; letter-spacing: .08em;
+  background: rgba(14,10,8,.88); color: var(--text); border: 1px solid rgba(240,220,176,.4);
+  opacity: 0; transition: opacity .2s ease; pointer-events: none;
+}
+.vn-hotspot:hover .vn-hotspot-label, .vn-hotspot:focus-visible .vn-hotspot-label { opacity: 1; }
+.vn-hotspot.is-done { cursor: pointer; }
+.vn-hotspot.is-done::after { animation: none; }
+.vn-hotspot.is-done::before {
+  content: '✓'; position: absolute; right: -8px; top: -8px; width: 22px; height: 22px; display: grid; place-items: center;
+  border-radius: 50%; background: var(--burgundy, #6b1e22); color: #f3e3c0; font-size: 13px; box-shadow: 0 1px 4px rgba(0,0,0,.6);
+}
+.vn-invest-bar {
+  position: absolute; z-index: 4; right: max(16px, env(safe-area-inset-right, 0px)); top: calc(60px + env(safe-area-inset-top, 0px));
+  display: flex; align-items: center; gap: 10px; padding: 6px 14px;
+  background: rgba(14,10,8,.75); border: 1px solid rgba(240,220,176,.35); font-size: 13px; letter-spacing: .12em;
+}
+.vn-invest-bar strong { color: var(--gold); font-family: var(--f-caps); }
+.is-editor-hotspots .vn-hotspot { border-color: rgba(240,220,176,.8); background: rgba(240,220,176,.12); pointer-events: none; }
+.is-editor-hotspots .vn-hotspot-label { opacity: 1; }
+
+.vn-invest-prompt {
+  position: absolute; z-index: 3; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  display: flex; align-items: center; gap: 10px; margin: 0; max-width: calc(100% - 32px);
+  padding: 10px 22px; font-size: 16px; letter-spacing: .06em; pointer-events: none;
+  background: rgba(14,10,8,.82); border: 1px solid rgba(240,220,176,.4); color: var(--text);
+  animation: inv-in .4s var(--ease-out) both;
+}
+@keyframes inv-in { from { opacity: 0; transform: translate(-50%, 8px); } }
+.vn-invest-prompt svg { width: 20px; height: 20px; color: var(--gold); flex: none; }
 
 /* item / illustration */
 .vn-item {

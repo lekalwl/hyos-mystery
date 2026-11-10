@@ -62,6 +62,31 @@ export interface EpisodeDef {
   /** Outfit every character starts this episode in (if they have it). */
   startOutfit?: string;
   script: string;
+  /** Investigation scenes, started from the script with `@조사 이름`. */
+  investigations?: InvestigationDef[];
+}
+
+/** A clickable spot on an investigation background. Coordinates in % of the 16:9 stage. */
+export interface Hotspot {
+  id: string;
+  label: string;
+  x: number; y: number; w: number; h: number;
+  /** Dialogue that plays when the spot is examined (same script language). */
+  script: string;
+  /** Not needed to finish the investigation. */
+  optional?: boolean;
+}
+
+export interface InvestigationDef {
+  id: string;
+  name: string;
+  /** bg asset id; empty = keep the current background */
+  bg?: string;
+  /** line shown while choosing */
+  prompt?: string;
+  /** keep the characters on screen while investigating */
+  keepChars?: boolean;
+  hotspots: Hotspot[];
 }
 
 export interface ContentData {
