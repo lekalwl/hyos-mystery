@@ -20,7 +20,7 @@ export const POSITIONS: (TagDef & { x: number })[] = [
   { key: 'farright', names: ['오른쪽끝', 'farright'], x: 88, desc: '화면 오른쪽 끝' },
 ];
 
-export type AnimKind = 'enter' | 'exit' | 'once' | 'loop';
+export type AnimKind = 'enter' | 'exit' | 'once' | 'loop' | 'pass';
 
 /** Sprite animations. 'enter'/'exit' play when a character appears/leaves. */
 export const SPRITE_ANIMS: (TagDef & { kind: AnimKind })[] = [
@@ -48,6 +48,8 @@ export const SPRITE_ANIMS: (TagDef & { kind: AnimKind })[] = [
   { key: 'bow', kind: 'once', names: ['인사', '꾸벅', 'bow'], desc: '꾸벅 고개 숙여 인사' },
   { key: 'dash', kind: 'once', names: ['돌진', 'dash'], desc: '앞으로 확 달려들었다 돌아옴' },
   { key: 'backstep', kind: 'once', names: ['뒷걸음', 'backstep'], desc: '놀라 크게 뒷걸음질' },
+  { key: 'pass-r', kind: 'pass', names: ['휙지나감', '휙오른쪽', 'passright'], desc: '화면을 왼쪽→오른쪽으로 휙 지나가고 사라짐' },
+  { key: 'pass-l', kind: 'pass', names: ['휙왼쪽', 'passleft'], desc: '화면을 오른쪽→왼쪽으로 휙 지나가고 사라짐' },
   { key: 'tremble', kind: 'loop', names: ['떨림', '바들바들', 'tremble'], desc: '대사 동안 바들바들 떨림' },
   { key: 'sway', kind: 'loop', names: ['흔들흔들', 'sway'], desc: '대사 동안 천천히 좌우로 흔들림' },
   { key: 'breathe', kind: 'loop', names: ['숨참', '헐떡', 'breathe'], desc: '숨을 몰아쉬듯 어깨가 들썩임' },
@@ -70,9 +72,17 @@ export const POSES: TagDef[] = [
   { key: 'back', names: ['뒤돌아섬', '뒤돌기', 'back'], desc: '반대쪽을 봄 (좌우 반전 유지)' },
   { key: 'small', names: ['작아짐', 'small'], desc: '조그맣게 작아짐 (유지)' },
   { key: 'big', names: ['커짐', 'big'], desc: '크게 커짐 (유지)' },
+  { key: 'pressed', names: ['눌린상태', '찌부', 'pressed'], desc: '살짝 눌린 채로 있음 (유지)' },
+  { key: 'shakehard', names: ['덜덜덜', '크게흔들림', 'shakehard'], desc: '과장되게 좌우로 크게 흔들림 (유지)' },
   { key: 'ghost', names: ['흐릿', '투명', 'ghost'], desc: '반투명하게 흐려짐 (유지)' },
   { key: 'shadow', names: ['실루엣', 'shadow'], desc: '검은 실루엣 (유지)' },
   { key: 'none', names: ['원래대로', '일어섬', 'normal'], desc: '자세를 원래대로' },
+];
+
+/** Stacking order when sprites overlap (kept until changed). */
+export const LAYERS: TagDef[] = [
+  { key: 'front', names: ['맨앞', '앞으로', 'front'], desc: '다른 인물보다 앞에 (겹칠 때 위로)' },
+  { key: 'back', names: ['맨뒤', '뒤로', 'back'], desc: '다른 인물보다 뒤에 (겹칠 때 아래로)' },
 ];
 
 /** Camera move speeds for @카메라. */
@@ -148,5 +158,6 @@ export const MOD_BY_NAME = index(LINE_MODS);
 export const BGT_BY_NAME = index(BG_TRANSITIONS);
 export const DIR_BY_NAME = index(DIRECTIVES);
 export const POSE_BY_NAME = index(POSES);
+export const LAYER_BY_NAME = index(LAYERS);
 export const CAM_SPEED_BY_NAME = index(CAMERA_SPEEDS);
 export const ANIM_BY_KEY = new Map(SPRITE_ANIMS.map((a) => [a.key, a]));

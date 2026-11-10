@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import type { ContentData, EpisodeDef } from '../content/types';
 import { updateContent } from '../content/store';
 import { compileScript, stepAtLine } from '../engine/script';
-import { COMMON_EXPRESSIONS, NARR_STYLES, POSITIONS, SCREEN_FX, SPRITE_ANIMS, LINE_MODS, BG_TRANSITIONS, POSES, CAMERA_SPEEDS } from '../engine/vocab';
+import { COMMON_EXPRESSIONS, NARR_STYLES, POSITIONS, SCREEN_FX, SPRITE_ANIMS, LINE_MODS, BG_TRANSITIONS, POSES, CAMERA_SPEEDS, LAYERS } from '../engine/vocab';
 import type { AssetKind } from '../content/types';
 import { AssetPicker } from './AssetPicker';
 import { CameraPicker } from './CameraPicker';
@@ -133,6 +133,8 @@ export function ScriptTab({ ep, data }: { ep: EpisodeDef; data: ContentData }) {
         {SPRITE_ANIMS.filter((a) => a.kind === 'enter' || a.kind === 'exit').map((a) => <button key={a.key} type="button" className={`chip kind-${a.kind}`} onClick={() => addTag(a.names[0])} title={a.desc}>{a.names[0]}</button>)}
         <span className="chip-label">한 번</span>
         {SPRITE_ANIMS.filter((a) => a.kind === 'once').map((a) => <button key={a.key} type="button" className="chip" onClick={() => addTag(a.names[0])} title={a.desc}>{a.names[0]}</button>)}
+        <span className="chip-label">휙 지나가기 (그 줄 뒤 사라짐)</span>
+        {SPRITE_ANIMS.filter((a) => a.kind === 'pass').map((a) => <button key={a.key} type="button" className="chip kind-enter" onClick={() => addTag(a.names[0])} title={a.desc}>{a.names[0]}</button>)}
         <span className="chip-label">대사 동안 반복</span>
         {SPRITE_ANIMS.filter((a) => a.kind === 'loop').map((a) => <button key={a.key} type="button" className="chip kind-loop" onClick={() => addTag(a.names[0])} title={a.desc}>{a.names[0]}</button>)}
         <span className="chip-label">자세 (풀 때까지 유지)</span>
@@ -153,7 +155,14 @@ export function ScriptTab({ ep, data }: { ep: EpisodeDef; data: ContentData }) {
         {CAMERA_SPEEDS.slice(1).map((c) => <button key={c.key} type="button" className="chip ghost" onClick={() => addTag(c.names[0])} title={c.desc}>#{c.names[0]}</button>)}
       </>,
     },
-    { id: 'pos', label: '위치', body: <>{POSITIONS.map((p) => <button key={p.key} type="button" className="chip" onClick={() => addTag(p.names[0])}>{p.names[0]}</button>)}</> },
+    {
+      id: 'pos', label: '위치 · 앞뒤',
+      body: <>
+        {POSITIONS.map((p) => <button key={p.key} type="button" className="chip" onClick={() => addTag(p.names[0])}>{p.names[0]}</button>)}
+        <span className="chip-label">겹칠 때 (유지)</span>
+        {LAYERS.map((l) => <button key={l.key} type="button" className="chip kind-pose" onClick={() => addTag(l.names[0])} title={l.desc}>{l.names[0]}</button>)}
+      </>,
+    },
     {
       id: 'narr', label: '해설 · 연출',
       body: <>

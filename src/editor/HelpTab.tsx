@@ -1,4 +1,4 @@
-import { BG_TRANSITIONS, CAMERA_SPEEDS, POSES, DIRECTIVES, LINE_MODS, NARR_STYLES, POSITIONS, SCREEN_FX, SPRITE_ANIMS, type TagDef } from '../engine/vocab';
+import { BG_TRANSITIONS, CAMERA_SPEEDS, LAYERS, POSES, DIRECTIVES, LINE_MODS, NARR_STYLES, POSITIONS, SCREEN_FX, SPRITE_ANIMS, type TagDef } from '../engine/vocab';
 import { SIZE_GUIDE } from './assets';
 
 const Table = ({ title, rows, prefix = '#' }: { title: string; rows: TagDef[]; prefix?: string }) => (
@@ -65,6 +65,7 @@ export function HelpTab() {
         <p>조사 탭에서 배경 위에 증거 칸을 그리고, 칸마다 눌렀을 때 나올 대화를 씁니다. 「선택」으로 표시한 칸은 안 봐도 넘어갑니다.</p>
       </section>
       <Table title="위치" rows={POSITIONS} />
+      <Table title="앞뒤 순서 — 인물이 겹칠 때 (바꿀 때까지 유지)" rows={LAYERS} />
       <Table title="해설 연출" rows={NARR_STYLES} />
       <Table title="대사 꾸밈" rows={LINE_MODS} />
       <Table title="화면 효과" rows={SCREEN_FX} />

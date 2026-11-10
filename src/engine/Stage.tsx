@@ -192,7 +192,7 @@ function Sprite({ c, stepKey, quiet }: { c: StageChar; stepKey: string | number;
   return (
     <div
       className={`vn-char${quiet ? ' is-quiet' : ''}${c.speaking ? ' is-speaking' : ''}${flip ? ' is-flipped' : ''}`}
-      style={{ '--x': `${c.x}%`, '--lift': `${lift}cqh` } as CSSProperties}
+      style={{ '--x': `${c.x}%`, '--xn': c.x, '--lift': `${lift}cqh`, ...(c.z !== undefined ? { zIndex: 10 + c.z } : {}) } as CSSProperties}
     >
       <div ref={motionRef} className="vn-char-motion">
         <div className={`vn-char-pose${c.pose && c.pose !== 'back' ? ` pose-${c.pose}` : ''}`}>

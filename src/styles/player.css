@@ -395,6 +395,30 @@
 .anim-spinloop { animation: a-sl 1.2s linear infinite; }
 @keyframes a-sl { from { transform: perspective(900px) rotateY(0); } to { transform: perspective(900px) rotateY(360deg); } }
 
+/* run across the screen and leave (휙지나감) */
+.anim-pass-r, .anim-pass-l { animation: a-pass 1.1s cubic-bezier(.55,.1,.45,.9) both; }
+.anim-pass-r { --from: calc(var(--xn) * -1cqw - 45cqw); --to: calc(145cqw - var(--xn) * 1cqw); }
+.anim-pass-l { --from: calc(145cqw - var(--xn) * 1cqw); --to: calc(var(--xn) * -1cqw - 45cqw); }
+@keyframes a-pass {
+  0% { transform: translateX(var(--from)) skewX(-8deg); filter: blur(2px); }
+  45%, 55% { filter: blur(.6px); }
+  100% { transform: translateX(var(--to)) skewX(-8deg); filter: blur(2px); }
+}
+.anim-pass-l { animation-name: a-pass-l; }
+@keyframes a-pass-l {
+  0% { transform: translateX(var(--from)) skewX(8deg); filter: blur(2px); }
+  45%, 55% { filter: blur(.6px); }
+  100% { transform: translateX(var(--to)) skewX(8deg); filter: blur(2px); }
+}
+.anim-pass-r::after, .anim-pass-l::after { /* speed lines trailing behind */
+  content: ''; position: absolute; top: 30%; height: 45%; width: 70%; pointer-events: none;
+  background: repeating-linear-gradient(180deg, transparent 0 7%, rgba(255,255,255,.75) 7% 8.2%, transparent 8.2% 16%);
+  mask-image: linear-gradient(90deg, transparent, #000 70%);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 70%);
+}
+.anim-pass-r::after { right: 70%; }
+.anim-pass-l::after { left: 70%; transform: scaleX(-1); }
+
 /* poses (persist between lines) */
 .pose-fallen, .pose-faint { transform-origin: 50% 80%; }
 .pose-fallen { transform: translateY(-12%) rotate(80deg); }          /* head falls toward the centre */
@@ -408,6 +432,15 @@
 .pose-small { transform: scale(.6); }
 .pose-big { transform: scale(1.3); }
 .pose-ghost { opacity: .45; }
+.pose-pressed { transform: scale(1.07, .88); }
+.pose-shakehard { animation: p-shakehard .5s ease-in-out infinite; }
+@keyframes p-shakehard {
+  0%, 100% { transform: translateX(0) rotate(0); }
+  20% { transform: translateX(-5%) rotate(-7deg); }
+  45% { transform: translateX(4.5%) rotate(6deg); }
+  70% { transform: translateX(-3.5%) rotate(-5deg); }
+  88% { transform: translateX(2.5%) rotate(3deg); }
+}
 .pose-shadow { filter: brightness(0); }
 .vn-char:has(.pose-fallen), .vn-char:has(.pose-faint) { z-index: 0; }
 

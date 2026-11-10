@@ -1,7 +1,7 @@
 import type { AssetDef, AssetKind, CharacterDef, InvestigationDef } from '../content/types';
 import { defaultOutfit, findSprite, outfitsOf } from '../content/sprites';
 import {
-  ANIM_BY_KEY, ANIM_BY_NAME, BGT_BY_NAME, CAM_SPEED_BY_NAME, DIR_BY_NAME, POSE_BY_NAME, FX_BY_NAME, MOD_BY_NAME, NARR_BY_NAME, POS_BY_NAME, POSITIONS,
+  ANIM_BY_KEY, ANIM_BY_NAME, BGT_BY_NAME, CAM_SPEED_BY_NAME, DIR_BY_NAME, LAYER_BY_NAME, POSE_BY_NAME, FX_BY_NAME, MOD_BY_NAME, NARR_BY_NAME, POS_BY_NAME, POSITIONS,
   type NarrStyle,
 } from './vocab';
 
@@ -35,6 +35,8 @@ export interface StageChar {
   anim?: string;
   /** persistent pose (see POSES) */
   pose?: string;
+  /** stacking order; higher is in front (kept until changed) */
+  z?: number;
   speaking?: boolean;
 }
 
@@ -153,6 +155,8 @@ export function compileScript(source: string, ctx: CompileContext) {
   let exiting: StageChar[] = [];
   let pendingFx: string[] = [];
   let pendingSe: string[] = [];
+  /** characters running across the screen this line; gone afterwards */
+  const passing = new Set<string>();
 
   const freeX = () => {
     const used = new Set([...chars.values()].map((c) => c.posKey));
@@ -167,13 +171,22 @@ export function compileScript(source: string, ctx: CompileContext) {
       const low = t.toLowerCase();
       const pos = POS_BY_NAME.get(low);
       if (pos) { c.x = pos.x; c.posKey = pos.key; continue; }
+      const layer = LAYER_BY_NAME.get(low);
+      if (layer) {
+        const others = [...chars.values()].filter((x) => x.id !== c.id).map((x) => x.z ?? 0);
+        c.z = layer.key === 'front' ? Math.max(0, ...others) + 1 : Math.min(0, ...others) - 1;
+        continue;
+      }
       const pose = POSE_BY_NAME.get(low);
       if (pose) { if (pose.key === 'none') delete c.pose; else c.pose = pose.key; continue; }
       const anim = ANIM_BY_NAME.get(low);
       if (anim) {
         if (anim.kind === 'enter') c.enter = anim.key;
         else if (anim.kind === 'exit') diagnostics.push({ line, level: 'warn', msg: `#${t} 는 @퇴장 줄에서 쓰세요` });
-        else c.anim = anim.key;
+        else {
+          c.anim = anim.key;
+          if (anim.kind === 'pass') { passing.add(c.id); delete c.enter; }
+        }
         continue;
       }
       const def = ctx.characters.find((x) => x.id === c.id);
@@ -207,6 +220,8 @@ export function compileScript(source: string, ctx: CompileContext) {
       fx: pendingFx,
       se: pendingSe,
     });
+    for (const id of passing) chars.delete(id);
+    passing.clear();
     for (const c of chars.values()) { delete c.enter; delete c.anim; delete c.speaking; }
     exiting = [];
     pendingFx = [];
