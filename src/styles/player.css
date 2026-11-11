@@ -627,3 +627,12 @@
 .sp-mute { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 14px; cursor: pointer; }
 .sp-mute kbd { margin-left: auto; font-family: var(--f-caps); font-size: 11px; color: var(--text-dim); }
 @media (max-width: 760px) { .sound-panel, .player.has-memo .sound-panel { right: max(14px, env(safe-area-inset-right, 0px)); top: calc(70px + env(safe-area-inset-top, 0px)); } }
+
+/* Layer order inside the scene. Sprites get their own stacking context so a
+   character's #맨앞/#맨뒤 only reorders characters, never lifts them over
+   items, illustrations or blackouts. */
+.vn-sprites { z-index: 1; }
+.vn-item { z-index: 2; }
+.vn-cg { z-index: 3; }
+.vn-hotspots { z-index: 4; }
+.vn-dim, .vn-black { z-index: 5; }
