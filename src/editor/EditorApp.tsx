@@ -10,7 +10,8 @@ import { HelpTab } from './HelpTab';
 import { RulesTab } from './RulesTab';
 import { InvestigationTab } from './InvestigationTab';
 import { exportZip, importFile } from './assets';
-import { saveFile, SAVE_MESSAGES } from '../lib/download';
+import { saveFile, SAVE_MESSAGES, lastSaveError } from '../lib/download';
+import { handoffAvailable, sendToClaude } from '../lib/handoff';
 import '../styles/editor.css';
 
 const useContentDismiss = () => updateContent((d) => d); // touching the draft makes it the newest
@@ -34,7 +35,22 @@ export default function EditorApp() {
   const [epId, setEpId] = useState(data.episodes[0]?.id ?? '');
   const [msg, setMsg] = useState<string | null>(null);
   const importRef = useRef<HTMLInputElement>(null);
-  const [busy, setBusy] = useState<'changes' | 'all' | null>(null);
+  const [busy, setBusy] = useState<'changes' | 'all' | 'send' | null>(null);
+  const [canSend, setCanSend] = useState(false);
+  useEffect(() => { handoffAvailable().then(setCanSend); }, []);
+  const runSend = async () => {
+    setBusy('send'); setBusyText('준비 중…');
+    try {
+      const blob = await exportZip('changes', (d, t) => setBusyText(t ? `담는 중 ${d}/${t}` : '담는 중…'));
+      const d = getContent().data;
+      const eps = d.episodes.map((e) => `EP${e.number} ${e.title}`).join(', ');
+      const r = await sendToClaude(blob, { episodes: eps, updatedAt: d.updatedAt }, (i, t) => setBusyText(`보내는 중 ${i}/${t}`));
+      flash(`Claude에게 보냈습니다 (${(r.size / 1048576).toFixed(1)}MB, ${new Date().toLocaleTimeString('ko-KR')}). 대화창에 「보냈어」라고만 하면 됩니다.`);
+    } catch (e) {
+      const code = (e as { code?: string }).code;
+      flash(`보내기 실패${code ? ` (${code})` : ''}: ${(e as Error).message}`);
+    } finally { setBusy(null); }
+  };
   const [busyText, setBusyText] = useState('');
 
   // first unlock: reload so this browser switches to its draft (or makes one)
@@ -59,7 +75,7 @@ export default function EditorApp() {
       const r = await saveFile(blob, `grayhaven-${mode === 'all' ? 'backup' : 'content'}-${new Date().toISOString().slice(0, 10)}.zip`);
       flash(r === 'saved'
         ? `${SAVE_MESSAGES.saved} (${mb}MB) ${mode === 'changes' ? '사이트에 이미 있는 파일은 빼고 바뀐 것만 담았습니다. 이 zip 링크를 주시면 사이트에 반영합니다.' : '모든 파일을 담은 전체 백업입니다.'}`
-        : SAVE_MESSAGES[r]);
+        : `${SAVE_MESSAGES[r]}${lastSaveError ? ` (${lastSaveError})` : ''}${r === 'unavailable' && canSend ? ' 대신 「Claude에게 보내기」를 쓰면 다운로드 없이 바로 넘어옵니다.' : ''}`);
     } catch (e) { flash(`내보내기 실패: ${(e as Error).message}`); }
     finally { setBusy(null); }
   };
@@ -74,6 +90,7 @@ export default function EditorApp() {
         </select>
         <span className="ed-saved">{source === 'draft' ? '이 브라우저에 자동 저장됨' : '불러오는 중'}</span>
         <div className="ed-top-actions">
+          {canSend && <button type="button" className="seal-btn small" disabled={!!busy} title="내보내기 파일을 다운로드 없이 Claude에게 바로 넘깁니다" onClick={runSend}>{busy === 'send' ? busyText : 'Claude에게 보내기'}</button>}
           <button type="button" className="text-btn light" disabled={!!busy} title="사이트에 아직 없는 파일과 대본·설정만 담습니다 (빠름)" onClick={() => runExport('changes')}>{busy === 'changes' ? busyText : '내보내기'}</button>
           <button type="button" className="text-btn light" disabled={!!busy} title="모든 이미지·음악까지 담은 전체 백업 (느림)" onClick={() => runExport('all')}>{busy === 'all' ? busyText : '전체 백업'}</button>
           <button type="button" className="text-btn light" onClick={() => importRef.current?.click()}>가져오기</button>
