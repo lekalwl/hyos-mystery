@@ -131,7 +131,7 @@ export const COMMON_EXPRESSIONS = ['일반', '미소', '기쁨', '슬픔', '분�
 /** Directives: lines starting with @. */
 export const DIRECTIVES: TagDef[] = [
   { key: 'bg', names: ['배경', 'bg'], desc: '@배경 이름 (#즉시 / #암전전환)' },
-  { key: 'cg', names: ['삽화', '일러스트', 'cg'], desc: '@삽화 이름 — 화면 전체 일러스트 / @삽화 끝' },
+  { key: 'cg', names: ['삽화', '일러스트', 'cg'], desc: '@삽화 이름 (#페이드 / #즉시 / #암전전환) — 화면 전체 일러스트. 다른 삽화에서 넘어갈 땐 기본이 즉시 / @삽화 끝' },
   { key: 'item', names: ['아이템', '증거', 'item'], desc: '@아이템 이름 — 가운데에 증거·아이템 / @아이템 끝' },
   { key: 'bgm', names: ['음악', 'bgm'], desc: '@음악 이름 (반복 재생) / @음악 끝' },
   { key: 'se', names: ['효과음', 'se'], desc: '@효과음 이름 — 다음 줄과 함께 한 번 재생' },

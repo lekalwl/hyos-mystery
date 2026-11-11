@@ -40,6 +40,7 @@ export function ScriptTab({ ep, data }: { ep: EpisodeDef; data: ContentData }) {
   const [openGroup, setOpenGroup] = useState<string>('char');
   const [picker, setPicker] = useState<AssetKind | null>(null);
   const [bgTr, setBgTr] = useState('fade');
+  const [cgTr, setCgTr] = useState('auto');
   const [camOpen, setCamOpen] = useState(false);
   const [motionGroup, setMotionGroup] = useState<MotionGroup | null>(null);
 
@@ -269,7 +270,8 @@ export function ScriptTab({ ep, data }: { ep: EpisodeDef; data: ContentData }) {
           current={picker === 'bg' ? step?.bg ?? undefined : picker === 'bgm' ? step?.bgm ?? undefined : undefined}
           onClose={() => setPicker(null)}
           onPick={(a) => {
-            const tr = picker === 'bg' && bgTr !== 'fade' ? ` #${BG_TRANSITIONS.find((t) => t.key === bgTr)!.names[0]}` : '';
+            const key = picker === 'bg' ? (bgTr !== 'fade' ? bgTr : '') : picker === 'cg' ? (cgTr !== 'auto' ? cgTr : '') : '';
+            const tr = key ? ` #${BG_TRANSITIONS.find((t) => t.key === key)!.names[0]}` : '';
             addDirective(`@${DIR_WORD[picker]} ${a.name}${tr}`);
             setPicker(null);
           }}
@@ -279,6 +281,18 @@ export function ScriptTab({ ep, data }: { ep: EpisodeDef; data: ContentData }) {
               {BG_TRANSITIONS.map((t) => (
                 <label key={t.key} className="ed-check" title={t.desc}>
                   <input type="radio" name="bg-tr" checked={bgTr === t.key} onChange={() => setBgTr(t.key)} /> {t.names[0]}
+                </label>
+              ))}
+            </div>
+          ) : picker === 'cg' ? (
+            <div className="ed-row" role="radiogroup" aria-label="나오는 방식">
+              <span className="chip-label">나오는 방식</span>
+              <label className="ed-check" title="처음 나올 땐 페이드, 다른 삽화에서 넘어올 땐 바로">
+                <input type="radio" name="cg-tr" checked={cgTr === 'auto'} onChange={() => setCgTr('auto')} /> 자동
+              </label>
+              {BG_TRANSITIONS.map((t) => (
+                <label key={t.key} className="ed-check" title={t.desc}>
+                  <input type="radio" name="cg-tr" checked={cgTr === t.key} onChange={() => setCgTr(t.key)} /> {t.names[0]}
                 </label>
               ))}
             </div>

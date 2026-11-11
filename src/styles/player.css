@@ -330,6 +330,9 @@
 .vn-bg.bg-in-fade { animation: bg-in .8s ease both; }
 .vn-bg.bg-in-cut { animation: none; }
 .vn-bg.bg-in-black { animation: bg-black 1.4s ease both; }
+.vn-cg.cg-in-fade { animation: bg-in .7s ease both; }
+.vn-cg.cg-in-cut { animation: none; }
+.vn-cg.cg-in-black { animation: bg-black 1.4s ease both; }
 @keyframes bg-black { 0% { opacity: 0; filter: brightness(0); } 45% { opacity: 1; filter: brightness(0); } 100% { filter: none; } }
 
 /* Sprites: sized by stage height; all expressions of one character share

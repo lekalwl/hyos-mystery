@@ -59,7 +59,7 @@ export function Stage({ step, stepKey, visibleText, hiddenText, box, overlay, on
           </figure>
         )}
 
-        {cgUrl && <img key={step.cg} className="vn-cg" src={cgUrl} alt="" />}
+        <CgLayer url={cgUrl} transition={step.cgTransition ?? 'fade'} />
         {overlay}
        </div>
 
@@ -114,6 +114,25 @@ function useLoadedSrc(url: string | null) {
     return () => { alive = false; };
   }, [url, shown]);
   return shown;
+}
+
+/** Illustration: keeps the previous one underneath so a swap never flashes black. */
+function CgLayer({ url, transition }: { url: string | null; transition: Step['cgTransition'] }) {
+  const [layers, setLayers] = useState<{ url: string; id: number; tr: string }[]>(url ? [{ url, id: 0, tr: transition }] : []);
+  const n = useRef(0);
+  useEffect(() => {
+    setLayers((prev) => {
+      if (prev[prev.length - 1]?.url === url) return prev;
+      if (!url) return [];
+      n.current += 1;
+      return [...prev.slice(-1), { url, id: n.current, tr: transition }];
+    });
+  }, [url, transition]);
+  return (
+    <>
+      {layers.map((l) => <img key={l.id} className={`vn-cg cg-in-${l.tr}`} src={l.url} alt="" />)}
+    </>
+  );
 }
 
 function Background({ url, transition }: { url: string | null; transition: Step['bgTransition'] }) {

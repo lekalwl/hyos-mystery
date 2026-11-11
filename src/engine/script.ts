@@ -54,6 +54,8 @@ export interface Step {
   bg: string | null;
   bgTransition: 'fade' | 'cut' | 'black';
   cg: string | null;
+  /** how the illustration appears: default = fade in from nothing, instant when replacing another */
+  cgTransition: 'fade' | 'cut' | 'black';
   item: string | null;
   blackout: boolean;
   chars: StageChar[];
@@ -138,6 +140,7 @@ export function compileScript(source: string, ctx: CompileContext) {
   let bg: string | null = null;
   let bgTransition: Step['bgTransition'] = 'fade';
   let cg: string | null = null;
+  let cgTransition: Step['cgTransition'] = 'fade';
   let item: string | null = null;
   let blackout = false;
   let bgm: string | null = null;
@@ -212,10 +215,10 @@ export function compileScript(source: string, ctx: CompileContext) {
     return c;
   };
 
-  const emit = (s: Omit<Step, 'bg' | 'bgTransition' | 'cg' | 'item' | 'blackout' | 'chars' | 'fx' | 'bgm' | 'se' | 'camera'>) => {
+  const emit = (s: Omit<Step, 'bg' | 'bgTransition' | 'cg' | 'cgTransition' | 'item' | 'blackout' | 'chars' | 'fx' | 'bgm' | 'se' | 'camera'>) => {
     steps.push({
       ...s,
-      bg, bgTransition, cg, item, blackout, bgm, camera: { ...camera },
+      bg, bgTransition, cg, cgTransition, item, blackout, bgm, camera: { ...camera },
       chars: [...[...chars.values()].map((c) => ({ ...c })), ...exiting],
       fx: pendingFx,
       se: pendingSe,
@@ -227,6 +230,7 @@ export function compileScript(source: string, ctx: CompileContext) {
     pendingFx = [];
     pendingSe = [];
     bgTransition = 'fade';
+    cgTransition = 'fade';
   };
 
   const lines = source.replace(/\r/g, '').split('\n');
@@ -252,7 +256,14 @@ export function compileScript(source: string, ctx: CompileContext) {
           cg = null;
           return;
         }
-        case 'cg': cg = !arg || isEnd ? null : resolveAsset('cg', arg, ln); return;
+        case 'cg': {
+          const next = !arg || isEnd ? null : resolveAsset('cg', arg, ln);
+          const tr = tags.map((t) => BGT_BY_NAME.get(t.toLowerCase())).find(Boolean);
+          // replacing one illustration with another swaps instantly unless a transition is given
+          cgTransition = (tr?.key as Step['cgTransition']) ?? (cg && next ? 'cut' : 'fade');
+          cg = next;
+          return;
+        }
         case 'item': item = !arg || isEnd ? null : resolveAsset('item', arg, ln); return;
         case 'bgm': bgm = !arg || isEnd ? null : resolveAsset('bgm', arg, ln); return;
         case 'se': if (arg) pendingSe.push(resolveAsset('se', arg, ln)); return;

@@ -83,7 +83,7 @@ function InvestEditor({ ep, data, inv, patch, onDelete, onRename }: {
     const at = steps.find((s) => s.invest === inv.id);
     return at ?? {
       line: 0, speaker: null, text: '', narr: 'box', thought: false,
-      bg: inv.bg ?? null, bgTransition: 'cut', cg: null, item: null, blackout: false,
+      bg: inv.bg ?? null, bgTransition: 'cut', cg: null, cgTransition: 'fade', item: null, blackout: false,
       chars: [], fx: [], bgm: null, se: [], camera: { ...CAMERA_HOME }, invest: inv.id,
     };
   }, [ep.script, ep.startOutfit, ep.investigations, data.characters, data.assets, inv.id, inv.bg]);
