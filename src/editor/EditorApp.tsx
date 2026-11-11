@@ -34,6 +34,8 @@ export default function EditorApp() {
   const [epId, setEpId] = useState(data.episodes[0]?.id ?? '');
   const [msg, setMsg] = useState<string | null>(null);
   const importRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState<'changes' | 'all' | null>(null);
+  const [busyText, setBusyText] = useState('');
 
   // first unlock: reload so this browser switches to its draft (or makes one)
   const unlock = async () => {
@@ -49,6 +51,18 @@ export default function EditorApp() {
 
   const ep = data.episodes.find((e) => e.id === epId) ?? data.episodes[0];
   const flash = (m: string) => { setMsg(m); window.setTimeout(() => setMsg(null), 7000); };
+  const runExport = async (mode: 'changes' | 'all') => {
+    setBusy(mode); setBusyText('준비 중…');
+    try {
+      const blob = await exportZip(mode, (d, t) => setBusyText(t ? `담는 중 ${d}/${t}` : '담는 중…'));
+      const mb = (blob.size / 1048576).toFixed(1);
+      const r = await saveFile(blob, `grayhaven-${mode === 'all' ? 'backup' : 'content'}-${new Date().toISOString().slice(0, 10)}.zip`);
+      flash(r === 'saved'
+        ? `${SAVE_MESSAGES.saved} (${mb}MB) ${mode === 'changes' ? '사이트에 이미 있는 파일은 빼고 바뀐 것만 담았습니다. 이 zip 링크를 주시면 사이트에 반영합니다.' : '모든 파일을 담은 전체 백업입니다.'}`
+        : SAVE_MESSAGES[r]);
+    } catch (e) { flash(`내보내기 실패: ${(e as Error).message}`); }
+    finally { setBusy(null); }
+  };
 
   return (
     <div className="editor">
@@ -60,13 +74,8 @@ export default function EditorApp() {
         </select>
         <span className="ed-saved">{source === 'draft' ? '이 브라우저에 자동 저장됨' : '불러오는 중'}</span>
         <div className="ed-top-actions">
-          <button type="button" className="text-btn light" onClick={async () => {
-            try {
-              const r = await saveFile(await exportZip(), `grayhaven-content-${new Date().toISOString().slice(0, 10)}.zip`);
-              flash(r === 'saved' ? `${SAVE_MESSAGES.saved} 압축을 풀어 나온 content 폴더를 사이트 폴더에 올리면 공개됩니다.` : SAVE_MESSAGES[r]);
-            }
-            catch (e) { flash(`내보내기 실패: ${(e as Error).message}`); }
-          }}>내보내기</button>
+          <button type="button" className="text-btn light" disabled={!!busy} title="사이트에 아직 없는 파일과 대본·설정만 담습니다 (빠름)" onClick={() => runExport('changes')}>{busy === 'changes' ? busyText : '내보내기'}</button>
+          <button type="button" className="text-btn light" disabled={!!busy} title="모든 이미지·음악까지 담은 전체 백업 (느림)" onClick={() => runExport('all')}>{busy === 'all' ? busyText : '전체 백업'}</button>
           <button type="button" className="text-btn light" onClick={() => importRef.current?.click()}>가져오기</button>
           <button type="button" className="text-btn light" onClick={() => setConfirmPub(true)}>사이트 버전 불러오기</button>
           <button type="button" className="text-btn light" onClick={() => navigate('')}>사이트 보기</button>
@@ -97,7 +106,7 @@ export default function EditorApp() {
           </p>
           <div className="ed-row">
             <button type="button" className="text-btn light" onClick={async () => {
-              try { await saveFile(await exportZip(), `grayhaven-backup-${new Date().toISOString().slice(0, 10)}.zip`); } catch { /* ignore */ }
+              try { await saveFile(await exportZip('all'), `grayhaven-backup-${new Date().toISOString().slice(0, 10)}.zip`); } catch { /* ignore */ }
             }}>지금 편집본 백업</button>
             <button type="button" className="seal-btn small" onClick={async () => {
               const ok = await usePublishedContent();

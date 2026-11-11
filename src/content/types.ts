@@ -98,6 +98,8 @@ export interface ContentData {
   menuBgm?: string;
   /** Rules document (markdown); empty = built-in default */
   rules?: string;
+  /** export holds only files not yet on the site (the rest are referenced by path) */
+  partial?: boolean;
   updatedAt: number;
 }
 

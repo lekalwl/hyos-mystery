@@ -142,22 +142,40 @@ async function assetBlob(a: AssetDef): Promise<Blob | null> {
   return (await blobGet(a.id)) ?? null;
 }
 
-/** Builds content.zip:  content/content.json + content/assets/<kind>/<id>.<ext> */
-export async function exportZip(): Promise<Blob> {
+/**
+ * Builds content.zip:  content/content.json + content/assets/<kind>/<id>.<ext>
+ *
+ * 'changes' (default): only files that exist just in this browser — new or
+ * replaced uploads. Everything already on the site is referenced by its
+ * published path, so the zip stays small and is made in seconds.
+ * 'all': every file, for a complete offline backup.
+ */
+export async function exportZip(mode: 'changes' | 'all' = 'changes', onProgress?: (done: number, total: number) => void): Promise<Blob> {
   const data = getContent().data;
-  const files: Record<string, Uint8Array> = {};
-  const assets: AssetDef[] = [];
-  for (const a of data.assets) {
-    const b = await assetBlob(a);
-    if (!b) { assets.push(a); continue; }
-    const ext = EXT[b.type] ?? EXT[a.mime ?? ''] ?? 'bin';
-    const path = `content/assets/${a.kind}/${a.id}.${ext}`;
-    files[path] = new Uint8Array(await b.arrayBuffer());
-    assets.push({ ...a, src: path, mime: b.type || a.mime });
-  }
-  const out: ContentData = { ...data, assets, updatedAt: Date.now() };
-  files['content/content.json'] = strToU8(JSON.stringify(out, null, 2));
-  const zipped = zipSync(files, { level: 6 });
+  const files: Record<string, Uint8Array | [Uint8Array, { level: 0 }]> = {};
+  const todo = data.assets.filter((a) => mode === 'all' || !a.src);
+  const out = new Map<string, AssetDef>(data.assets.map((a) => [a.id, a]));
+  let done = 0;
+  onProgress?.(0, todo.length);
+  // a few downloads at a time instead of one by one
+  const queue = [...todo];
+  const worker = async () => {
+    for (let a = queue.shift(); a; a = queue.shift()) {
+      const b = await assetBlob(a);
+      if (b) {
+        const ext = EXT[b.type] ?? EXT[a.mime ?? ''] ?? (a.src?.split('.').pop() || 'bin');
+        const path = `content/assets/${a.kind}/${a.id}.${ext}`;
+        // media is already compressed: store it as-is (much faster)
+        files[path] = [new Uint8Array(await b.arrayBuffer()), { level: 0 }];
+        out.set(a.id, { ...a, src: path, mime: b.type || a.mime });
+      }
+      onProgress?.(++done, todo.length);
+    }
+  };
+  await Promise.all(Array.from({ length: 6 }, worker));
+  const result: ContentData = { ...data, assets: data.assets.map((a) => out.get(a.id)!), updatedAt: Date.now(), ...(mode === 'changes' ? { partial: true } : {}) };
+  files['content/content.json'] = strToU8(JSON.stringify(result, null, 2));
+  const zipped = zipSync(files as Parameters<typeof zipSync>[0]);
   return new Blob([zipped], { type: 'application/zip' });
 }
 
@@ -184,6 +202,7 @@ export async function importFile(file: File) {
     }
   }
   if (!data || data.version !== 1) throw new Error('그레이헤이븐 콘텐츠 파일이 아닙니다');
+  delete data.partial;
   await replaceContent(data, urls);
 }
 
