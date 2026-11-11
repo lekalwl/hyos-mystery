@@ -1,8 +1,10 @@
-import { useState } from 'react';
-import { useContent, assetUrl } from '../content/store';
+import { useMemo, useState } from 'react';
+import { useContent, assetUrl, isOperatorBrowser } from '../content/store';
+import { compileScript } from '../engine/script';
+import { LogView } from '../components/player/LogView';
 import { navigate } from '../lib/router';
 import { SubPage } from '../components/SubPage';
-import { formatTime, getBookmarks, getMemo, latestBookmark, requestStart } from '../lib/storage';
+import { formatTime, getBookmarks, getMemo, isCompleted, latestBookmark, requestStart } from '../lib/storage';
 
 export function EpisodesPage() {
   const { data } = useContent();
@@ -12,6 +14,13 @@ export function EpisodesPage() {
   const last = latestBookmark(ep.id);
   const marks = getBookmarks(ep.id).filter(Boolean).length;
   const memo = getMemo(ep.id);
+  const done = isCompleted(ep.id);
+  const [logFor, setLogFor] = useState<string | null>(null);
+  const logEp = episodes.find((e) => e.id === logFor);
+  const logSteps = useMemo(
+    () => (logEp ? compileScript(logEp.script, { characters: data.characters, assets: data.assets, startOutfit: logEp.startOutfit, investigations: logEp.investigations }).steps : []),
+    [logEp, data.characters, data.assets],
+  );
 
   return (
     <SubPage kind="episodes" eyebrow="Episodes" title="에피소드">
@@ -69,7 +78,13 @@ export function EpisodesPage() {
                     책갈피에서 이어 읽기
                   </button>
                 )}
+                {(done || isOperatorBrowser()) && (
+                  <button type="button" className="seal-btn ghost" onClick={() => setLogFor(ep.id)}>
+                    대사 기록
+                  </button>
+                )}
               </div>
+              {!done && <p className="ep-reader-state"><span>끝까지 읽으면 대사 기록에서 원하는 장면으로 바로 갈 수 있습니다</span></p>}
               {(marks > 0 || memo.text.trim()) && (
                 <p className="ep-reader-state">
                   {marks > 0 && <span>책갈피 {marks}개 · 최근 {formatTime(last!.savedAt)}</span>}
@@ -82,6 +97,18 @@ export function EpisodesPage() {
           )}
         </section>
       </div>
+      {logEp && logSteps.length > 0 && (
+        <LogView
+          page
+          steps={logSteps}
+          upTo={logSteps.length - 1}
+          current={0}
+          investigations={logEp.investigations}
+          title={`Episode ${logEp.number} · ${logEp.title}`}
+          onClose={() => setLogFor(null)}
+          onJump={(i) => { requestStart(logEp.id, i); navigate(`episode-${logEp.id}`); }}
+        />
+      )}
     </SubPage>
   );
 }

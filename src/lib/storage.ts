@@ -69,3 +69,7 @@ export const formatTime = (ts: number) => {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
+
+/** Episodes the reader has finished (unlocks the full dialogue log). */
+export const isCompleted = (ep: string) => !!read<number>(`completed:${ep}`, 0);
+export const markCompleted = (ep: string) => { if (!isCompleted(ep)) write(`completed:${ep}`, Date.now()); };

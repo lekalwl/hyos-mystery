@@ -6,6 +6,8 @@ import { COMMON_EXPRESSIONS, NARR_STYLES, POSITIONS, SCREEN_FX, SPRITE_ANIMS, LI
 import type { AssetKind } from '../content/types';
 import { AssetPicker } from './AssetPicker';
 import { CameraPicker } from './CameraPicker';
+import { MotionPicker, type MotionGroup } from './MotionPicker';
+import { spriteUrl } from '../content/store';
 import { requestStart } from '../lib/storage';
 import { navigate } from '../lib/router';
 import { Preview } from './Preview';
@@ -20,6 +22,15 @@ function insertText(el: HTMLTextAreaElement, start: number, end: number, text: s
   el.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
+const MOTION_GROUPS: MotionGroup[] = [
+  { id: 'enter', label: '등장', mode: 'enter', hint: '처음 나올 때 (@등장 줄이나 처음 말하는 줄에)', items: SPRITE_ANIMS.filter((a) => a.kind === 'enter') },
+  { id: 'exit', label: '퇴장', mode: 'exit', hint: '@퇴장 줄 뒤에 붙임', items: SPRITE_ANIMS.filter((a) => a.kind === 'exit') },
+  { id: 'once', label: '한 번 동작', mode: 'anim', hint: '그 줄에서 한 번 재생', items: SPRITE_ANIMS.filter((a) => a.kind === 'once') },
+  { id: 'loop', label: '반복 동작', mode: 'anim', hint: '그 줄 동안 계속', items: SPRITE_ANIMS.filter((a) => a.kind === 'loop') },
+  { id: 'pass', label: '휙 지나가기', mode: 'anim', hint: '그 줄 동안 화면을 가로질러 지나가고 사라짐', items: SPRITE_ANIMS.filter((a) => a.kind === 'pass') },
+  { id: 'pose', label: '자세', mode: 'pose', hint: '#원래대로 쓸 때까지 유지', items: POSES },
+];
+
 export function ScriptTab({ ep, data }: { ep: EpisodeDef; data: ContentData }) {
   const areaRef = useRef<HTMLTextAreaElement>(null);
   const gutterRef = useRef<HTMLDivElement>(null);
@@ -30,6 +41,7 @@ export function ScriptTab({ ep, data }: { ep: EpisodeDef; data: ContentData }) {
   const [picker, setPicker] = useState<AssetKind | null>(null);
   const [bgTr, setBgTr] = useState('fade');
   const [camOpen, setCamOpen] = useState(false);
+  const [motionGroup, setMotionGroup] = useState<MotionGroup | null>(null);
 
   const { steps, diagnostics } = useMemo(
     () => compileScript(ep.script, { characters: data.characters, assets: data.assets, startOutfit: ep.startOutfit, investigations: ep.investigations }),
@@ -129,16 +141,10 @@ export function ScriptTab({ ep, data }: { ep: EpisodeDef; data: ContentData }) {
     {
       id: 'anim', label: '동작',
       body: <>
-        <span className="chip-label">등장·퇴장</span>
-        {SPRITE_ANIMS.filter((a) => a.kind === 'enter' || a.kind === 'exit').map((a) => <button key={a.key} type="button" className={`chip kind-${a.kind}`} onClick={() => addTag(a.names[0])} title={a.desc}>{a.names[0]}</button>)}
-        <span className="chip-label">한 번</span>
-        {SPRITE_ANIMS.filter((a) => a.kind === 'once').map((a) => <button key={a.key} type="button" className="chip" onClick={() => addTag(a.names[0])} title={a.desc}>{a.names[0]}</button>)}
-        <span className="chip-label">휙 지나가기 (그 줄 뒤 사라짐)</span>
-        {SPRITE_ANIMS.filter((a) => a.kind === 'pass').map((a) => <button key={a.key} type="button" className="chip kind-enter" onClick={() => addTag(a.names[0])} title={a.desc}>{a.names[0]}</button>)}
-        <span className="chip-label">대사 동안 반복</span>
-        {SPRITE_ANIMS.filter((a) => a.kind === 'loop').map((a) => <button key={a.key} type="button" className="chip kind-loop" onClick={() => addTag(a.names[0])} title={a.desc}>{a.names[0]}</button>)}
-        <span className="chip-label">자세 (풀 때까지 유지)</span>
-        {POSES.map((a) => <button key={a.key} type="button" className={`chip kind-pose${a.key === 'none' ? ' ghost' : ''}`} onClick={() => addTag(a.names[0])} title={a.desc}>{a.names[0]}</button>)}
+        {MOTION_GROUPS.map((g) => (
+          <button key={g.id} type="button" className="chip pick" onClick={() => setMotionGroup(g)} title={g.hint}>{g.label} 고르기… <small>{g.items.length}</small></button>
+        ))}
+        <button type="button" className="chip ghost" onClick={() => addTag('원래대로')} title="자세를 원래대로">#원래대로</button>
       </>,
     },
     {
@@ -277,6 +283,15 @@ export function ScriptTab({ ep, data }: { ep: EpisodeDef; data: ContentData }) {
               ))}
             </div>
           ) : undefined}
+        />
+      )}
+      {motionGroup && (
+        <MotionPicker
+          group={motionGroup}
+          sprite={currentChar ? spriteUrl(currentChar.id) : null}
+          charName={currentChar?.name}
+          onClose={() => setMotionGroup(null)}
+          onPick={(t) => { addTag(t); setMotionGroup(null); }}
         />
       )}
       {camOpen && <CameraPicker step={step} onInsert={addDirective} onClose={() => setCamOpen(false)} />}

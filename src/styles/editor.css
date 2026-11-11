@@ -281,3 +281,13 @@ textarea.ed-input { resize: vertical; line-height: 1.6; }
 .ed-hs-diag { margin: 0; padding-left: 18px; font-size: 12px; }
 .ed-hs-diag .diag-error { color: #e07a6a; } .ed-hs-diag .diag-warn { color: #d9b46a; }
 @media (max-width: 1000px) { .ed-invest, .ed-hs-edit { grid-template-columns: 1fr; } }
+
+/* motion picker */
+.ed-motion-grid { list-style: none; margin: 0; padding: 12px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.ed-motion-grid button { width: 100%; height: 100%; display: grid; grid-template-rows: auto auto 1fr; gap: 4px; padding: 6px 6px 8px; background: #120d0a; border: 1px solid rgba(185,152,96,.2); color: inherit; cursor: pointer; text-align: left; }
+.ed-motion-grid button:hover, .ed-motion-grid button:focus-visible { border-color: var(--gold-hi); outline: none; }
+.ed-motion-grid strong { font-size: 14px; color: var(--gold-hi); }
+.ed-motion-grid small { font-size: 11px; line-height: 1.5; color: var(--text-dim); }
+.ed-motion-stage { position: relative; display: block; aspect-ratio: 1; overflow: hidden; container-type: size; background: radial-gradient(ellipse at 50% 60%, #3a2a1f, #120d0a); }
+.ed-motion-stage .vn-char { display: block; height: 104cqh; bottom: -4cqh; }
+.ed-motion-stage .vn-char-motion, .ed-motion-stage .vn-char-pose, .ed-motion-stage .vn-char-anim { display: block; }

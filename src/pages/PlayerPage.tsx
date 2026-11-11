@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { navigate } from '../lib/router';
 import { prefersReducedMotion } from '../lib/motion';
-import { deleteBookmark, getBookmarks, getMemo, setBookmark, takeStart, type Bookmark } from '../lib/storage';
+import { deleteBookmark, getBookmarks, getMemo, isCompleted, markCompleted, setBookmark, takeStart, type Bookmark } from '../lib/storage';
+import { LogView } from '../components/player/LogView';
 import { ReaderMenu, type ReaderPanel } from '../components/player/ReaderMenu';
 import { BookmarkPanel } from '../components/player/BookmarkPanel';
 import { MemoPanel } from '../components/player/MemoPanel';
@@ -31,7 +32,7 @@ export function PlayerPage({ id }: { id: string }) {
   const [shown, setShown] = useState(0);
   const [ended, setEnded] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
-  const logRef = useRef<HTMLDivElement>(null);
+  const [completed, setCompleted] = useState(() => isCompleted(id));
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [bmMode, setBmMode] = useState<'save' | 'load' | null>(null);
@@ -105,8 +106,8 @@ export function PlayerPage({ id }: { id: string }) {
 
   const next = useCallback(() => {
     if (safeIndex < steps.length - 1) setIndex(safeIndex + 1);
-    else setEnded(true);
-  }, [safeIndex, steps.length]);
+    else { setEnded(true); markCompleted(id); setCompleted(true); }
+  }, [safeIndex, steps.length, id]);
 
   const advance = useCallback(() => {
     if (modalOpen || ended) return;
@@ -175,10 +176,6 @@ export function PlayerPage({ id }: { id: string }) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [advance, logOpen, bmMode, menuOpen, memoOpen, soundOpen, pickTool]);
-
-  useEffect(() => {
-    if (logOpen) logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
-  }, [logOpen]);
 
   if (!ep || (ep.status !== 'available' && !isOperatorBrowser()) || !step) {
     return (
@@ -318,20 +315,15 @@ export function PlayerPage({ id }: { id: string }) {
       )}
 
       {logOpen && (
-        <div className="vn-log" role="dialog" aria-modal="true" aria-label="대사 기록">
-          <div className="vn-log-head">
-            <h2>대사 기록</h2>
-            <button type="button" className="vn-btn" onClick={() => setLogOpen(false)} autoFocus>닫기</button>
-          </div>
-          <div className="vn-log-body" ref={logRef}>
-            {steps.slice(0, safeIndex + 1).flatMap((s, i) => (s.invest ? invLog[i] ?? [] : [s]).map((x, j) => (
-              <p key={`${i}-${j}`} className="log-line">
-                <span className="log-name" style={x.speaker?.color ? { color: x.speaker.color } : undefined}>{x.speaker ? x.speaker.name : '—'}</span>
-                <span className={x.thought ? 'is-thought-log' : undefined}>{x.thought ? `( ${x.text} )` : x.text}</span>
-              </p>
-            )))}
-          </div>
-        </div>
+        <LogView
+          steps={steps}
+          upTo={completed ? steps.length - 1 : safeIndex}
+          current={safeIndex}
+          invLog={invLog}
+          investigations={ep.investigations}
+          onClose={() => setLogOpen(false)}
+          onJump={(i) => { setIndex(i); setInvest({ index: -1, done: [], sub: null }); setEnded(false); setLogOpen(false); showToast('그 장면부터 이어 읽습니다'); }}
+        />
       )}
     </div>
   );
