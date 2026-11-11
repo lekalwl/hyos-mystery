@@ -587,3 +587,15 @@
 .photo-grid.is-sprites li { margin-bottom: 0; }
 .photo-grid.is-sprites .photo-print { background: radial-gradient(ellipse at 50% 40%, #3a2a1f, #1e1510); }
 @media (max-width: 560px) { .photo-grid.is-sprites { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; } }
+
+/* episode page: right leaf keeps one height whatever the episode shows */
+.ep-head { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: calc(20px + 2 * 1.35 * clamp(22px, 2.4vw, 30px) + 26px); }
+.ep-head .ep-title { line-height: 1.35; }
+.ep-foot { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+.ep-foot .ep-actions { min-height: 38px; }
+.ep-foot .ep-reader-state { min-height: 3.4em; align-content: flex-start; margin: 0; }
+.leaf-right .ornament-rule { margin: 4px 0 10px; }
+.ep-plate { max-width: 380px; }
+.ep-foot .ep-reader-state { display: grid; justify-items: center; gap: 0; line-height: 1.7; min-height: 3.4em; }
+.ep-foot .ep-reader-state span + span::before { content: none; }
+.ep-plate { max-width: 360px; }

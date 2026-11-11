@@ -11,7 +11,8 @@ import { spriteUrl } from '../content/store';
 import { requestStart } from '../lib/storage';
 import { navigate } from '../lib/router';
 import { Preview } from './Preview';
-import { outfitsOf } from '../content/sprites';
+import { defaultOutfit, findSprite, outfitsOf } from '../content/sprites';
+import { assetUrl } from '../content/store';
 
 /** Insert text keeping the browser's undo history where possible. */
 function insertText(el: HTMLTextAreaElement, start: number, end: number, text: string) {
@@ -43,6 +44,8 @@ export function ScriptTab({ ep, data }: { ep: EpisodeDef; data: ContentData }) {
   const [cgTr, setCgTr] = useState('auto');
   const [camOpen, setCamOpen] = useState(false);
   const [motionGroup, setMotionGroup] = useState<MotionGroup | null>(null);
+  /** expression chip under the mouse → face preview */
+  const [face, setFace] = useState<{ expr: string; outfit?: string; x: number; y: number; below?: number } | null>(null);
 
   const { steps, diagnostics } = useMemo(
     () => compileScript(ep.script, { characters: data.characters, assets: data.assets, startOutfit: ep.startOutfit, investigations: ep.investigations }),
@@ -133,10 +136,19 @@ export function ScriptTab({ ep, data }: { ep: EpisodeDef; data: ContentData }) {
       body: <>
         {currentChar && outfitsOf(currentChar, data.assets).length > 1 && <>
           <span className="chip-label">의상</span>
-          {outfitsOf(currentChar, data.assets).map((o) => <button key={o} type="button" className="chip kind-outfit" onClick={() => addTag(o)}>{o}</button>)}
+          {outfitsOf(currentChar, data.assets).map((o) => (
+            <button key={o} type="button" className="chip kind-outfit" onClick={() => addTag(o)}
+              onMouseEnter={(e) => { const r = e.currentTarget.getBoundingClientRect(); setFace({ expr: '', outfit: o, x: r.left + r.width / 2, y: r.top, below: r.top < 200 ? r.bottom : undefined }); }}
+              onMouseLeave={() => setFace(null)}>{o}</button>
+          ))}
           <span className="chip-label">표정</span>
         </>}
-        {exprs.map((x) => <button key={x} type="button" className={`chip${own.has(x) ? ' has-art' : ''}`} onClick={() => addTag(x)} title={own.has(x) ? '스프라이트 있음' : '스프라이트 없음 (임시 이미지)'}>{x}</button>)}
+        {exprs.map((x) => (
+          <button key={x} type="button" className={`chip${own.has(x) ? ' has-art' : ''}`} onClick={() => addTag(x)}
+            onMouseEnter={(e) => { const r = e.currentTarget.getBoundingClientRect(); setFace({ expr: x, x: r.left + r.width / 2, y: r.top, below: r.top < 200 ? r.bottom : undefined }); }}
+            onMouseLeave={() => setFace(null)} onFocus={(e) => { const r = e.currentTarget.getBoundingClientRect(); setFace({ expr: x, x: r.left + r.width / 2, y: r.top, below: r.top < 200 ? r.bottom : undefined }); }} onBlur={() => setFace(null)}
+          >{x}</button>
+        ))}
       </>,
     },
     {
@@ -299,6 +311,21 @@ export function ScriptTab({ ep, data }: { ep: EpisodeDef; data: ContentData }) {
           ) : undefined}
         />
       )}
+      {face && currentChar && (() => {
+        const onStage = step?.chars.find((c) => c.id === currentChar.id && !c.exit);
+        const outfit = face.outfit ?? onStage?.outfit ?? defaultOutfit(currentChar, data.assets);
+        const expr = face.expr || onStage?.expr || '기본';
+        const { asset, exact } = findSprite(data.assets, currentChar.id, outfit, expr);
+        const url = asset ? assetUrl(asset.id) : null;
+        return (
+          <div className={`ed-face-pop${face.below !== undefined ? ' is-below' : ''}`} style={{ left: face.x, top: face.below ?? face.y }} aria-hidden="true">
+            <span className="ed-face-img">
+              {url ? <img src={url} alt="" style={{ transform: `translateY(${-((asset?.top ?? 0) * 100) + 1}%)` }} /> : <em>스프라이트 없음</em>}
+            </span>
+            <small>{currentChar.name} · {outfit} · {expr}{asset && !exact ? ' (다른 의상)' : ''}</small>
+          </div>
+        );
+      })()}
       {motionGroup && (
         <MotionPicker
           group={motionGroup}

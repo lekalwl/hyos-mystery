@@ -59,42 +59,42 @@ export function EpisodesPage() {
           <figure className="ep-plate">
             <img src={assetUrl(ep.thumbnail) ?? assetUrl(`ph:cg:EPISODE ${ep.number}`) ?? ''} alt={`${ep.title} 썸네일`} />
           </figure>
-          <p className="ep-number">Episode {ep.number}</p>
-          <h2 className="ep-title">{ep.title}</h2>
-          {ep.subtitle && <p className="ep-sub">{ep.subtitle}</p>}
+          {/* fixed-size slots so the book never changes height between episodes */}
+          <div className="ep-head">
+            <p className="ep-number">Episode {ep.number}</p>
+            <h2 className="ep-title">{ep.title}</h2>
+            {ep.subtitle && <p className="ep-sub">{ep.subtitle}</p>}
+          </div>
           <span className="ornament-rule" aria-hidden="true" />
-          {ep.status === 'available' ? (
-            <>
-              <div className="ep-actions">
+          <div className="ep-foot">
+            {ep.status === 'available' ? (
+              <>
                 <button type="button" className="seal-btn" onClick={() => navigate(`episode-${ep.id}`)}>
                   처음부터 읽기
                 </button>
-                {last && (
-                  <button
-                    type="button"
-                    className="seal-btn ghost"
-                    onClick={() => { requestStart(ep.id, last.index); navigate(`episode-${ep.id}`); }}
-                  >
-                    책갈피에서 이어 읽기
-                  </button>
-                )}
-                {(done || isOperatorBrowser()) && (
-                  <button type="button" className="seal-btn ghost" onClick={() => setLogFor(ep.id)}>
-                    대사 기록
-                  </button>
-                )}
-              </div>
-              {!done && <p className="ep-reader-state"><span>끝까지 읽으면 대사 기록에서 원하는 장면으로 바로 갈 수 있습니다</span></p>}
-              {(marks > 0 || memo.text.trim()) && (
+                <div className="ep-actions">
+                  {last && (
+                    <button type="button" className="seal-btn ghost small" onClick={() => { requestStart(ep.id, last.index); navigate(`episode-${ep.id}`); }}>
+                      책갈피에서 이어 읽기
+                    </button>
+                  )}
+                  {(done || isOperatorBrowser()) && (
+                    <button type="button" className="seal-btn ghost small" onClick={() => setLogFor(ep.id)}>
+                      대사 기록
+                    </button>
+                  )}
+                </div>
                 <p className="ep-reader-state">
-                  {marks > 0 && <span>책갈피 {marks}개 · 최근 {formatTime(last!.savedAt)}</span>}
-                  {memo.text.trim() && <span>메모 있음</span>}
+                  {!done && <span>끝까지 읽으면 대사 기록이 열립니다</span>}
+                  {(marks > 0 || memo.text.trim()) && (
+                    <span>{[marks > 0 ? `책갈피 ${marks}개 · 최근 ${formatTime(last!.savedAt)}` : '', memo.text.trim() ? '메모 있음' : ''].filter(Boolean).join(' · ')}</span>
+                  )}
                 </p>
-              )}
-            </>
-          ) : (
-            <p className="sealed-note">원고가 도착하면 열람할 수 있습니다.</p>
-          )}
+              </>
+            ) : (
+              <p className="sealed-note">원고가 도착하면 열람할 수 있습니다.</p>
+            )}
+          </div>
         </section>
       </div>
       {logEp && logSteps.length > 0 && (

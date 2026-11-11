@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { Step } from '../engine/script';
 import { Stage } from '../engine/Stage';
 import { audio } from '../engine/audio';
@@ -14,11 +14,17 @@ export function Preview({ step, index, total, onIndex, onPlay, sound, onSound, i
   investigations?: InvestigationDef[];
 }) {
   const inv = step?.invest ? investigations?.find((i) => i.id === step.invest) : undefined;
+  // Typing recompiles the script and hands us a new step object each time;
+  // only play sound effects when we actually move to another line.
+  const lastSe = useRef('');
   useEffect(() => {
-    if (!sound || !step) { audio.playBgm(null); return; }
+    if (!sound || !step) { audio.playBgm(null); lastSe.current = ''; return; }
     audio.playBgm(assetUrl(step.bgm));
+    const key = `${index}:${step.line}:${step.se.join(',')}`;
+    if (key === lastSe.current) return;
+    lastSe.current = key;
     step.se.forEach((s) => audio.playSe(assetUrl(s)));
-  }, [step, sound]);
+  }, [step, sound, index]);
   useEffect(() => () => audio.playBgm(null), []);
 
   return (
