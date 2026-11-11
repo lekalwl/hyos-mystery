@@ -158,26 +158,23 @@ function CgImg({ url, tr, play }: { url: string; tr: string; play: Step['cgPlay'
 }
 
 function Background({ url, transition }: { url: string | null; transition: Step['bgTransition'] }) {
-  // keep the previous image underneath while the new one fades in
-  const [layers, setLayers] = useState<{ url: string; id: number }[]>(url ? [{ url, id: 0 }] : []);
+  // Keep the previous image underneath while the new one comes in. Each image
+  // remembers the transition it arrived with: a later line's (default)
+  // transition must not restart its animation.
+  const [layers, setLayers] = useState<{ url: string; id: number; tr: string }[]>(url ? [{ url, id: 0, tr: 'first' }] : []);
   const n = useRef(0);
   useEffect(() => {
     setLayers((prev) => {
       if (prev[prev.length - 1]?.url === url) return prev;
       if (!url) return [];
       n.current += 1;
-      return [...prev.slice(-1), { url, id: n.current }];
+      return [...prev.slice(-1), { url, id: n.current, tr: prev.length ? transition : 'first' }];
     });
-  }, [url]);
+  }, [url, transition]);
   return (
     <div className="vn-bg-wrap">
-      {layers.map((l, i) => (
-        <img
-          key={l.id}
-          className={`vn-bg${i === layers.length - 1 && layers.length > 1 ? ` bg-in-${transition}` : ''}`}
-          src={l.url}
-          alt=""
-        />
+      {layers.map((l) => (
+        <img key={l.id} className={`vn-bg${l.tr !== 'first' ? ` bg-in-${l.tr}` : ''}`} src={l.url} alt="" />
       ))}
     </div>
   );
