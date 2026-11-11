@@ -424,6 +424,9 @@ export function compileScript(source: string, ctx: CompileContext) {
     for (const t of rest) {
       if (!ANIM_BY_KEY.has(t)) diagnostics.push({ line: ln, level: 'warn', msg: `해설 줄에서 쓸 수 없는 태그: #${t}` });
     }
+    // a line with only effect tags, e.g. "(#암전)" or "(#독백해제)": apply them to
+    // the next line instead of showing an empty box
+    if (!text.trim()) return;
     emit({ line: ln, speaker: null, text, narr: narr ?? 'box', thought: false });
   });
 
