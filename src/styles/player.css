@@ -636,3 +636,5 @@
 .vn-cg { z-index: 3; }
 .vn-hotspots { z-index: 4; }
 .vn-dim, .vn-black { z-index: 5; }
+/* keep those scene layers inside the scene, under the dialogue box and panels */
+.stage-shake { isolation: isolate; }
