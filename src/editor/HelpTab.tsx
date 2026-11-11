@@ -1,4 +1,4 @@
-import { BG_TRANSITIONS, CAMERA_SPEEDS, LAYERS, POSES, DIRECTIVES, LINE_MODS, NARR_STYLES, POSITIONS, SCREEN_FX, SPRITE_ANIMS, type TagDef } from '../engine/vocab';
+import { BG_TRANSITIONS, CAMERA_SPEEDS, CG_PLAY, LAYERS, POSES, DIRECTIVES, LINE_MODS, NARR_STYLES, POSITIONS, SCREEN_FX, SPRITE_ANIMS, type TagDef } from '../engine/vocab';
 import { SIZE_GUIDE } from './assets';
 
 const Table = ({ title, rows, prefix = '#' }: { title: string; rows: TagDef[]; prefix?: string }) => (
@@ -69,6 +69,7 @@ export function HelpTab() {
       <Table title="해설 연출" rows={NARR_STYLES} />
       <Table title="대사 꾸밈" rows={LINE_MODS} />
       <Table title="화면 효과" rows={SCREEN_FX} />
+      <Table title="움짤 삽화 재생 (@삽화 줄 뒤에, GIF·움직이는 WebP)" rows={CG_PLAY} />
       <Table title="배경 전환 (@배경 줄 뒤에)" rows={BG_TRANSITIONS} />
       <section className="ed-help-sec">
         <h3>표정 태그</h3>

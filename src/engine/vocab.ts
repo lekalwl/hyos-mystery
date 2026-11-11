@@ -100,6 +100,14 @@ export const SCREEN_FX: TagDef[] = [
   { key: 'redflash', names: ['붉은번쩍', 'redflash'], desc: '붉게 번쩍임' },
   { key: 'blackout', names: ['암전', 'blackout'], desc: '화면을 검게 덮음 (암전해제까지 유지)' },
   { key: 'unblackout', names: ['암전해제', 'unblackout'], desc: '암전을 걷어냄' },
+  { key: 'focus', names: ['독백', '속마음연출', '스포트라이트', 'focus'], desc: '배경만 어둡게 꺼지고 인물은 앞에 보임 (독백해제까지 유지)' },
+  { key: 'unfocus', names: ['독백해제', 'unfocus'], desc: '독백 연출을 걷어냄' },
+];
+
+/** How an animated illustration (GIF / animated WebP) plays, for @삽화. */
+export const CG_PLAY: TagDef[] = [
+  { key: 'loop', names: ['반복', 'loop'], desc: '움짤을 계속 반복 재생' },
+  { key: 'once', names: ['한번', '1회', 'once'], desc: '움짤을 한 번 재생하고 마지막 프레임에서 멈춤' },
 ];
 
 /** How a narration line (no speaker) is presented. */
@@ -131,7 +139,7 @@ export const COMMON_EXPRESSIONS = ['일반', '미소', '기쁨', '슬픔', '분�
 /** Directives: lines starting with @. */
 export const DIRECTIVES: TagDef[] = [
   { key: 'bg', names: ['배경', 'bg'], desc: '@배경 이름 (#즉시 / #암전전환)' },
-  { key: 'cg', names: ['삽화', '일러스트', 'cg'], desc: '@삽화 이름 (#페이드 / #즉시 / #암전전환) — 화면 전체 일러스트. 다른 삽화에서 넘어갈 땐 기본이 즉시 / @삽화 끝' },
+  { key: 'cg', names: ['삽화', '일러스트', 'cg'], desc: '@삽화 이름 (#페이드 / #즉시 / #암전전환, 움짤은 #반복 / #한번) — 화면 전체 일러스트. 다른 삽화에서 넘어갈 땐 기본이 즉시 / @삽화 끝' },
   { key: 'item', names: ['아이템', '증거', 'item'], desc: '@아이템 이름 — 가운데에 증거·아이템 / @아이템 끝' },
   { key: 'bgm', names: ['음악', 'bgm'], desc: '@음악 이름 (반복 재생) / @음악 끝' },
   { key: 'se', names: ['효과음', 'se'], desc: '@효과음 이름 — 다음 줄과 함께 한 번 재생' },
@@ -159,5 +167,6 @@ export const BGT_BY_NAME = index(BG_TRANSITIONS);
 export const DIR_BY_NAME = index(DIRECTIVES);
 export const POSE_BY_NAME = index(POSES);
 export const LAYER_BY_NAME = index(LAYERS);
+export const CG_PLAY_BY_NAME = index(CG_PLAY);
 export const CAM_SPEED_BY_NAME = index(CAMERA_SPEEDS);
 export const ANIM_BY_KEY = new Map(SPRITE_ANIMS.map((a) => [a.key, a]));

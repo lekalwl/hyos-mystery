@@ -42,6 +42,7 @@ export function ScriptTab({ ep, data }: { ep: EpisodeDef; data: ContentData }) {
   const [picker, setPicker] = useState<AssetKind | null>(null);
   const [bgTr, setBgTr] = useState('fade');
   const [cgTr, setCgTr] = useState('auto');
+  const [cgPlay, setCgPlay] = useState<'loop' | 'once'>('loop');
   const [camOpen, setCamOpen] = useState(false);
   const [motionGroup, setMotionGroup] = useState<MotionGroup | null>(null);
   /** expression chip under the mouse → face preview */
@@ -283,7 +284,8 @@ export function ScriptTab({ ep, data }: { ep: EpisodeDef; data: ContentData }) {
           onClose={() => setPicker(null)}
           onPick={(a) => {
             const key = picker === 'bg' ? (bgTr !== 'fade' ? bgTr : '') : picker === 'cg' ? (cgTr !== 'auto' ? cgTr : '') : '';
-            const tr = key ? ` #${BG_TRANSITIONS.find((t) => t.key === key)!.names[0]}` : '';
+            const tr = (key ? ` #${BG_TRANSITIONS.find((t) => t.key === key)!.names[0]}` : '')
+              + (picker === 'cg' && cgPlay === 'once' && /gif|webp/i.test(a.mime ?? a.src ?? '') ? ' #한번' : '');
             addDirective(`@${DIR_WORD[picker]} ${a.name}${tr}`);
             setPicker(null);
           }}
@@ -307,6 +309,9 @@ export function ScriptTab({ ep, data }: { ep: EpisodeDef; data: ContentData }) {
                   <input type="radio" name="cg-tr" checked={cgTr === t.key} onChange={() => setCgTr(t.key)} /> {t.names[0]}
                 </label>
               ))}
+              <span className="chip-label">움짤</span>
+              <label className="ed-check" title="계속 반복 재생"><input type="radio" name="cg-play" checked={cgPlay === 'loop'} onChange={() => setCgPlay('loop')} /> 반복</label>
+              <label className="ed-check" title="한 번 재생하고 마지막 장면에서 멈춤"><input type="radio" name="cg-play" checked={cgPlay === 'once'} onChange={() => setCgPlay('once')} /> 한 번</label>
             </div>
           ) : undefined}
         />

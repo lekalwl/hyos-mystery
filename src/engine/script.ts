@@ -1,7 +1,7 @@
 import type { AssetDef, AssetKind, CharacterDef, InvestigationDef } from '../content/types';
 import { defaultOutfit, findSprite, outfitsOf } from '../content/sprites';
 import {
-  ANIM_BY_KEY, ANIM_BY_NAME, BGT_BY_NAME, CAM_SPEED_BY_NAME, DIR_BY_NAME, LAYER_BY_NAME, POSE_BY_NAME, FX_BY_NAME, MOD_BY_NAME, NARR_BY_NAME, POS_BY_NAME, POSITIONS,
+  ANIM_BY_KEY, ANIM_BY_NAME, BGT_BY_NAME, CAM_SPEED_BY_NAME, CG_PLAY_BY_NAME, DIR_BY_NAME, LAYER_BY_NAME, POSE_BY_NAME, FX_BY_NAME, MOD_BY_NAME, NARR_BY_NAME, POS_BY_NAME, POSITIONS,
   type NarrStyle,
 } from './vocab';
 
@@ -58,6 +58,10 @@ export interface Step {
   cgTransition: 'fade' | 'cut' | 'black';
   item: string | null;
   blackout: boolean;
+  /** background blacked out, characters still shown (inner monologue) */
+  focus: boolean;
+  /** animated illustration: loop, or play once and hold the last frame */
+  cgPlay: 'loop' | 'once';
   chars: StageChar[];
   fx: string[];
   bgm: string | null;
@@ -143,12 +147,14 @@ export function compileScript(source: string, ctx: CompileContext) {
   let cgTransition: Step['cgTransition'] = 'fade';
   let item: string | null = null;
   let blackout = false;
+  let focus = false;
+  let cgPlay: Step['cgPlay'] = 'loop';
   let bgm: string | null = null;
   let camera: Camera = { ...CAMERA_HOME };
   const chars = new Map<string, StageChar>();
   if (ctx.from) {
     const f = ctx.from;
-    bg = f.bg; cg = f.cg; item = null; blackout = f.blackout; bgm = f.bgm; camera = { ...f.camera };
+    bg = f.bg; cg = f.cg; cgPlay = f.cgPlay ?? 'loop'; item = null; blackout = f.blackout; focus = !!f.focus; bgm = f.bgm; camera = { ...f.camera };
     for (const c of f.chars) {
       if (c.exit) continue;
       chars.set(c.id, { ...c, enter: undefined, anim: undefined, speaking: undefined });
@@ -215,10 +221,10 @@ export function compileScript(source: string, ctx: CompileContext) {
     return c;
   };
 
-  const emit = (s: Omit<Step, 'bg' | 'bgTransition' | 'cg' | 'cgTransition' | 'item' | 'blackout' | 'chars' | 'fx' | 'bgm' | 'se' | 'camera'>) => {
+  const emit = (s: Omit<Step, 'bg' | 'bgTransition' | 'cg' | 'cgTransition' | 'item' | 'blackout' | 'focus' | 'cgPlay' | 'chars' | 'fx' | 'bgm' | 'se' | 'camera'>) => {
     steps.push({
       ...s,
-      bg, bgTransition, cg, cgTransition, item, blackout, bgm, camera: { ...camera },
+      bg, bgTransition, cg, cgTransition, cgPlay, item, blackout, focus, bgm, camera: { ...camera },
       chars: [...[...chars.values()].map((c) => ({ ...c })), ...exiting],
       fx: pendingFx,
       se: pendingSe,
@@ -261,6 +267,8 @@ export function compileScript(source: string, ctx: CompileContext) {
           const tr = tags.map((t) => BGT_BY_NAME.get(t.toLowerCase())).find(Boolean);
           // replacing one illustration with another swaps instantly unless a transition is given
           cgTransition = (tr?.key as Step['cgTransition']) ?? (cg && next ? 'cut' : 'fade');
+          const play = tags.map((t) => CG_PLAY_BY_NAME.get(t.toLowerCase())).find(Boolean);
+          if (next !== cg || play) cgPlay = (play?.key as Step['cgPlay']) ?? 'loop';
           cg = next;
           return;
         }
@@ -273,6 +281,8 @@ export function compileScript(source: string, ctx: CompileContext) {
             if (!fx) { diagnostics.push({ line: ln, level: 'warn', msg: `알 수 없는 화면 효과: #${t}` }); continue; }
             if (fx.key === 'blackout') blackout = true;
             else if (fx.key === 'unblackout') blackout = false;
+            else if (fx.key === 'focus') focus = true;
+            else if (fx.key === 'unfocus') focus = false;
             else pendingFx.push(fx.key);
           }
           return;
@@ -379,6 +389,8 @@ export function compileScript(source: string, ctx: CompileContext) {
       if (fx) {
         if (fx.key === 'blackout') blackout = true;
         else if (fx.key === 'unblackout') blackout = false;
+        else if (fx.key === 'focus') focus = true;
+        else if (fx.key === 'unfocus') focus = false;
         else pendingFx.push(fx.key);
         continue;
       }

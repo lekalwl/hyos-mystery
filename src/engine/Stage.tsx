@@ -3,6 +3,7 @@ import type { Step, StageChar } from './script';
 import { assetUrl, getContent } from '../content/store';
 import { defaultOutfit, findSprite } from '../content/sprites';
 import { knownTop, measureTop } from '../lib/imageTop';
+import { playVariant } from '../lib/animImage';
 
 /**
  * Renders one Step: background, sprites (with their animations), item,
@@ -46,6 +47,8 @@ export function Stage({ step, stepKey, visibleText, hiddenText, box, overlay, on
       <div ref={shakeRef} className="stage-shake">
        <div className="stage-camera" style={cameraStyle(step)}>
         <Background url={bgUrl} transition={step.bgTransition} />
+        {/* monologue: the place goes dark, the characters stay in front */}
+        <div className={`vn-focus${step.focus ? ' is-on' : ''}`} aria-hidden="true" />
 
         <div className={`vn-sprites${step.item ? ' has-item' : ''}`}>
           {step.chars.map((c) => (
@@ -59,7 +62,7 @@ export function Stage({ step, stepKey, visibleText, hiddenText, box, overlay, on
           </figure>
         )}
 
-        <CgLayer url={cgUrl} transition={step.cgTransition ?? 'fade'} />
+        <CgLayer url={cgUrl} transition={step.cgTransition ?? 'fade'} play={step.cgPlay ?? 'loop'} />
         {overlay}
        </div>
 
@@ -117,22 +120,41 @@ function useLoadedSrc(url: string | null) {
 }
 
 /** Illustration: keeps the previous one underneath so a swap never flashes black. */
-function CgLayer({ url, transition }: { url: string | null; transition: Step['cgTransition'] }) {
-  const [layers, setLayers] = useState<{ url: string; id: number; tr: string }[]>(url ? [{ url, id: 0, tr: transition }] : []);
+function CgLayer({ url, transition, play }: { url: string | null; transition: Step['cgTransition']; play: Step['cgPlay'] }) {
+  const [layers, setLayers] = useState<{ url: string; id: number; tr: string; play: Step['cgPlay'] }[]>(url ? [{ url, id: 0, tr: transition, play }] : []);
   const n = useRef(0);
   useEffect(() => {
     setLayers((prev) => {
-      if (prev[prev.length - 1]?.url === url) return prev;
+      const top = prev[prev.length - 1];
+      if (top?.url === url && top.play === play) return prev;
       if (!url) return [];
       n.current += 1;
-      return [...prev.slice(-1), { url, id: n.current, tr: transition }];
+      return [...prev.slice(-1), { url, id: n.current, tr: top?.url === url ? 'cut' : transition, play }];
     });
-  }, [url, transition]);
+  }, [url, transition, play]);
   return (
     <>
-      {layers.map((l) => <img key={l.id} className={`vn-cg cg-in-${l.tr}`} src={l.url} alt="" />)}
+      {layers.map((l) => <CgImg key={l.id} url={l.url} tr={l.tr} play={l.play} />)}
     </>
   );
+}
+
+/** One illustration; GIF / animated WebP get their loop setting applied first. */
+function CgImg({ url, tr, play }: { url: string; tr: string; play: Step['cgPlay'] }) {
+  const maybeAnimated = /\.(gif|webp)(\?|$)/i.test(url) || url.startsWith('blob:');
+  const [src, setSrc] = useState<string | null>(maybeAnimated ? null : url);
+  useEffect(() => {
+    if (!maybeAnimated) return;
+    let alive = true;
+    let made: string | null = null;
+    playVariant(url, play).then((v) => {
+      made = v;
+      if (alive) setSrc(v ?? url);
+      else if (v) URL.revokeObjectURL(v);
+    });
+    return () => { alive = false; if (made) URL.revokeObjectURL(made); };
+  }, [url, play, maybeAnimated]);
+  return src ? <img className={`vn-cg cg-in-${tr}`} src={src} alt="" /> : null;
 }
 
 function Background({ url, transition }: { url: string | null; transition: Step['bgTransition'] }) {

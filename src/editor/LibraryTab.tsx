@@ -52,6 +52,7 @@ export function LibraryTab({ data }: { data: ContentData }) {
           {data.menuBgm && <> <button type="button" className="text-btn light" onClick={() => updateContent((d) => ({ ...d, menuBgm: undefined }))}>메인 화면 음악 없애기</button></>}
         </p>
       )}
+      {kind === 'cg' && <p className="ed-help">움짤(GIF·움직이는 WebP)도 올릴 수 있습니다. 대본에서 <code>@삽화 이름 #반복</code>(계속 반복, 기본) 또는 <code>@삽화 이름 #한번</code>(한 번 재생하고 마지막 장면에서 멈춤).</p>}
       {busy && <p className="ed-help">올리는 중…</p>}
       <ul className="ed-assets">
         {list.map((a) => <AssetCard key={a.id} a={a} data={data} />)}
