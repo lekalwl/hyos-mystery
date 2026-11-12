@@ -26,7 +26,9 @@ export function PlayerPage({ id }: { id: string }) {
 
   // investigation progress for the current step
   const [invest, setInvest] = useState<{ index: number; done: string[]; sub: { hid: string; steps: Step[]; i: number } | null }>({ index: -1, done: [], sub: null });
+  // investigation dialogue the reader has actually seen, line by line
   const [invLog, setInvLog] = useState<Record<number, Step[]>>({});
+  const invLogged = useRef(new Set<string>());
 
   const [index, setIndex] = useState(() => takeStart(id));
   const [shown, setShown] = useState(0);
@@ -66,6 +68,14 @@ export function PlayerPage({ id }: { id: string }) {
   const returned = !!invDef && !sub && invState.done.length > 0;
   const step: Step | undefined = sub ? sub.steps[sub.i] : returned ? settledBase : baseStep;
   const stepKey = `${safeIndex}:${sub?.hid ?? ''}:${sub?.i ?? ''}`;
+  useEffect(() => {
+    if (!sub) return;
+    const key = `${safeIndex}:${sub.hid}:${sub.i}`;
+    if (invLogged.current.has(key)) return; // looked at this spot before
+    invLogged.current.add(key);
+    const line = sub.steps[sub.i];
+    setInvLog((m) => ({ ...m, [safeIndex]: [...(m[safeIndex] ?? []), line] }));
+  }, [sub, safeIndex]);
   const doneSet = new Set(invState.done);
   const invRequired = invDef ? requiredSpots(invDef) : [];
   const invComplete = !!invDef && invRequired.every((h) => doneSet.has(h.id));
@@ -144,7 +154,6 @@ export function PlayerPage({ id }: { id: string }) {
       if (invRequired.every((x) => done.includes(x.id))) next();
       return;
     }
-    setInvLog((m) => ({ ...m, [safeIndex]: [...(m[safeIndex] ?? []), ...subSteps] }));
     setInvest({ ...invState, sub: { hid, steps: subSteps, i: 0 } });
   };
 
