@@ -55,7 +55,16 @@ export function PlayerPage({ id }: { id: string }) {
   const invDef = baseStep?.invest ? ep?.investigations?.find((i) => i.id === baseStep.invest) : undefined;
   const invState = invest.index === safeIndex ? invest : { index: safeIndex, done: [] as string[], sub: null };
   const sub = invDef ? invState.sub : null;
-  const step: Step | undefined = sub ? sub.steps[sub.i] : baseStep;
+  // Coming back to the investigation screen after looking at a spot: show it
+  // as it ended up, not as it arrived — characters that left stay gone, and
+  // entrances, exits, screen effects and sounds don't play a second time.
+  const settledBase = useMemo<Step | undefined>(() => baseStep && {
+    ...baseStep,
+    chars: baseStep.chars.filter((c) => !c.exit).map((c) => ({ ...c, enter: undefined, anim: undefined })),
+    fx: [], se: [], bgTransition: 'cut', cgTransition: 'cut',
+  }, [baseStep]);
+  const returned = !!invDef && !sub && invState.done.length > 0;
+  const step: Step | undefined = sub ? sub.steps[sub.i] : returned ? settledBase : baseStep;
   const stepKey = `${safeIndex}:${sub?.hid ?? ''}:${sub?.i ?? ''}`;
   const doneSet = new Set(invState.done);
   const invRequired = invDef ? requiredSpots(invDef) : [];
