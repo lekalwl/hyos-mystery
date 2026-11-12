@@ -455,3 +455,11 @@ export function stepAtLine(steps: Step[], line: number) {
   }
   return idx;
 }
+
+/** One line of investigation dialogue, tagged with the spot it belongs to. */
+export interface InvLine { hid: string; step: Step }
+
+/** All evidence dialogue of an investigation step, spot by spot (for the full log). */
+export function investigationLines(at: Step, inv: InvestigationDef, ctx: Omit<CompileContext, 'from' | 'investigations'>): InvLine[] {
+  return inv.hotspots.flatMap((h) => compileScript(h.script, { ...ctx, from: at }).steps.map((step) => ({ hid: h.id, step })));
+}

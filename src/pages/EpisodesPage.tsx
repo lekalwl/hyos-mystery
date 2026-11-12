@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useContent, assetUrl, isOperatorBrowser } from '../content/store';
-import { compileScript } from '../engine/script';
+import { compileScript, investigationLines, type InvLine } from '../engine/script';
 import { LogView } from '../components/player/LogView';
 import { navigate } from '../lib/router';
 import { SubPage } from '../components/SubPage';
@@ -104,6 +104,10 @@ export function EpisodesPage() {
           upTo={logSteps.length - 1}
           current={0}
           investigations={logEp.investigations}
+          invLog={Object.fromEntries(logSteps.flatMap((st, i) => {
+            const inv = st.invest && logEp.investigations?.find((x) => x.id === st.invest);
+            return inv ? [[i, investigationLines(st, inv, { characters: data.characters, assets: data.assets, startOutfit: logEp.startOutfit })]] : [];
+          })) as Record<number, InvLine[]>}
           title={`Episode ${logEp.number} · ${logEp.title}`}
           onClose={() => setLogFor(null)}
           onJump={(i) => { requestStart(logEp.id, i); navigate(`episode-${logEp.id}`); }}
