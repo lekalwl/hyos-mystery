@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Step } from '../../engine/script';
+import type { InvLine, Step } from '../../engine/script';
 import type { InvestigationDef } from '../../content/types';
 
 /**
@@ -12,7 +12,7 @@ export function LogView({ steps, upTo, current, invLog, investigations, title, o
   /** line to scroll to when opened */
   current: number;
   /** dialogue already seen inside investigations, by step index */
-  invLog?: Record<number, Step[]>;
+  invLog?: Record<number, InvLine[]>;
   investigations?: InvestigationDef[];
   title?: string;
   onJump: (index: number) => void;
@@ -56,7 +56,16 @@ export function LogView({ steps, upTo, current, invLog, investigations, title, o
                 <button type="button" className="log-invest-head" onClick={() => setSel(sel === i ? null : i)} aria-pressed={sel === i}>
                   조사 · {name.replace(/_/g, ' ')}
                 </button>
-                {seen.map((x, j) => <p key={j} className="log-line is-sub">{line(x, `${i}-${j}`)}</p>)}
+                {seen.length === 0 && <p className="log-invest-empty">아직 살펴본 증거가 없습니다</p>}
+                {seen.map((x, j) => {
+                  const label = investigations?.find((v) => v.id === s.invest)?.hotspots.find((h) => h.id === x.hid)?.label || '증거';
+                  return (
+                    <div key={j}>
+                      {(j === 0 || seen[j - 1].hid !== x.hid) && <p className="log-evidence"><span>증거</span>{label}</p>}
+                      <p className="log-line is-sub">{line(x.step, `${i}-${j}`)}</p>
+                    </div>
+                  );
+                })}
                 {sel === i && <button type="button" className="log-jump" onClick={() => onJump(i)}>여기로 이동 ▸</button>}
               </div>
             );
