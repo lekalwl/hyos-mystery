@@ -304,7 +304,7 @@ export function compileScript(source: string, ctx: CompileContext) {
             if (def) {
               const c = chars.get(def.id);
               if (!c) diagnostics.push({ line: ln, level: 'warn', msg: `"${def.name}"은(는) 화면에 없어 가운데를 비춤` });
-              x = c?.x ?? 50; y = 34;
+              x = c?.x ?? 50; y = faceY(def, ctx.assets);
             } else if (pos) { x = pos.x; y = 45; zoom = isNaN(nums[1]) ? 1.5 : nums[1]; }
             else { diagnostics.push({ line: ln, level: 'error', msg: '@카메라 x y 배율 / @카메라 인물이름 배율 / @카메라 전체' }); return; }
           }
@@ -440,6 +440,19 @@ export function clampCamera(c: Camera): Camera {
   const half = 50 / zoom;
   const cl = (v: number) => Math.min(100 - half, Math.max(half, v));
   return { ...c, zoom, x: cl(c.x), y: cl(c.y) };
+}
+
+/**
+ * Where a character's face sits on screen (% from the top), using the same
+ * sprite size and lift as the Stage: short characters stand lower, so the
+ * camera has to look lower too. Tall ones keep the old framing (34%).
+ */
+export function faceY(def: CharacterDef, assets: AssetDef[]) {
+  const SPRITE_H = 92, HEAD_LINE = 24;
+  const top = findSprite(assets, def.id, defaultOutfit(def, assets), '기본').asset?.top ?? 0;
+  const lift = def.stageLift ?? Math.max(0, (100 - SPRITE_H) + top * SPRITE_H - HEAD_LINE);
+  const headTop = (100 - SPRITE_H) + top * SPRITE_H - lift;
+  return Math.max(34, headTop + 26);
 }
 
 function kindWord(k: AssetKind) {
