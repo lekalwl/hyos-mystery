@@ -3711,41 +3711,41 @@
    "id": "se-mw9ck08nqxdj",
    "kind": "se",
    "name": "SE_금속딸깍",
-   "mime": "audio/wav",
+   "mime": "audio/mpeg",
    "created": 1794233929296,
-   "src": "content/assets/se/se-mw9ck08nqxdj.wav"
+   "src": "content/assets/se/se-mw9ck08nqxdj.mp3"
   },
   {
    "id": "se-mw9ck09cfw1a",
    "kind": "se",
    "name": "SE_나무문",
-   "mime": "audio/wav",
+   "mime": "audio/mpeg",
    "created": 1794233929301,
-   "src": "content/assets/se/se-mw9ck09cfw1a.wav"
+   "src": "content/assets/se/se-mw9ck09cfw1a.mp3"
   },
   {
    "id": "se-mw9ck09hwwj6",
    "kind": "se",
    "name": "SE_문종",
-   "mime": "audio/wav",
+   "mime": "audio/mpeg",
    "created": 1794233929309,
-   "src": "content/assets/se/se-mw9ck09hwwj6.wav"
+   "src": "content/assets/se/se-mw9ck09hwwj6.mp3"
   },
   {
    "id": "se-mw9ck09p7c1u",
    "kind": "se",
    "name": "SE_상자쿵",
-   "mime": "audio/wav",
+   "mime": "audio/mpeg",
    "created": 1794233929315,
-   "src": "content/assets/se/se-mw9ck09p7c1u.wav"
+   "src": "content/assets/se/se-mw9ck09p7c1u.mp3"
   },
   {
    "id": "se-mw9ck09vgjui",
    "kind": "se",
    "name": "SE_스프링",
-   "mime": "audio/wav",
+   "mime": "audio/mpeg",
    "created": 1794233929320,
-   "src": "content/assets/se/se-mw9ck09vgjui.wav"
+   "src": "content/assets/se/se-mw9ck09vgjui.mp3"
   },
   {
    "id": "se-mw9ck0a0vd03",
@@ -3759,41 +3759,41 @@
    "id": "se-mw9ck0adj5hr",
    "kind": "se",
    "name": "SE_연필",
-   "mime": "audio/wav",
+   "mime": "audio/mpeg",
    "created": 1794233929347,
-   "src": "content/assets/se/se-mw9ck0adj5hr.wav"
+   "src": "content/assets/se/se-mw9ck0adj5hr.mp3"
   },
   {
    "id": "se-mw9ck0ari7vg",
    "kind": "se",
    "name": "SE_인쇄기",
-   "mime": "audio/wav",
+   "mime": "audio/mpeg",
    "created": 1794233929354,
-   "src": "content/assets/se/se-mw9ck0ari7vg.wav"
+   "src": "content/assets/se/se-mw9ck0ari7vg.mp3"
   },
   {
    "id": "se-mw9ck0ayryj3",
    "kind": "se",
    "name": "SE_종이",
-   "mime": "audio/wav",
+   "mime": "audio/mpeg",
    "created": 1794233929371,
-   "src": "content/assets/se/se-mw9ck0ayryj3.wav"
+   "src": "content/assets/se/se-mw9ck0ayryj3.mp3"
   },
   {
    "id": "se-mw9ck0bf35cz",
    "kind": "se",
    "name": "SE_토큰",
-   "mime": "audio/wav",
+   "mime": "audio/mpeg",
    "created": 1794233929386,
-   "src": "content/assets/se/se-mw9ck0bf35cz.wav"
+   "src": "content/assets/se/se-mw9ck0bf35cz.mp3"
   },
   {
    "id": "se-mw9ck0bu1370",
    "kind": "se",
    "name": "SE_확인도장",
-   "mime": "audio/wav",
+   "mime": "audio/mpeg",
    "created": 1794233929398,
-   "src": "content/assets/se/se-mw9ck0bu1370.wav"
+   "src": "content/assets/se/se-mw9ck0bu1370.mp3"
   },
   {
    "id": "item-mw9ck6wlu2ef",
@@ -5830,9 +5830,9 @@
    "id": "se-mwl3n05pum91",
    "kind": "se",
    "name": "힐링벨",
-   "mime": "audio/ogg",
+   "mime": "audio/mpeg",
    "created": 1794944546759,
-   "src": "content/assets/se/se-mwl3n05pum91.ogg"
+   "src": "content/assets/se/se-mwl3n05pum91.mp3"
   },
   {
    "id": "cg-mwl3rcjw1elt",
